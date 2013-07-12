@@ -201,4 +201,22 @@ public final class HiveTableDescription {
 
     return columnData;
   }
+
+  /**
+   * Creates the in-memory row object that contains the column data in the hive table.
+   * <p/>
+   * <p>The returned object will be given to the object inspector for
+   * extracting column data. Since our object inspector is the
+   * standard java inspector, the structure of the object returned
+   * should match the data types specified in the hive table schema.</p>
+   *
+   * @param columnData The HBase data from the row.
+   * @return An object representing the row.
+   * @throws IOException If there is an IO error.
+   */
+  public KijiRowDataWritable createWritableObject(Object columnData, ObjectInspector objectInspector) throws IOException {
+    LOG.info("Inspecting: " + objectInspector.toString());
+    KijiRowDataWritable kijiRowData = new KijiRowDataWritable();
+    return kijiRowData;
+  }
 }

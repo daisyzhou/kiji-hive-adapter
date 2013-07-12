@@ -89,15 +89,18 @@ public class KijiTableSerDe implements SerDe {
   /** {@inheritDoc} */
   @Override
   public Class<? extends Writable> getSerializedClass() {
-    LOG.info("FIXME getting serialized class");
     return Result.class;
   }
 
   /** {@inheritDoc} */
   @Override
   public Writable serialize(Object obj, ObjectInspector objInspector) throws SerDeException {
-    throw new UnsupportedOperationException(
-        getClass().getSimpleName() + " does not support writes.");
+    LOG.info("FIXME serialize called for: {}", obj.toString());
+    try {
+      return mHiveTableDescription.createWritableObject(obj, objInspector);
+    } catch (IOException e) {
+      throw new SerDeException("Error writing data from the HBase result", e);
+    }
   }
 
   /** {@inheritDoc} */
@@ -120,7 +123,6 @@ public class KijiTableSerDe implements SerDe {
   /** {@inheritDoc} */
   @Override
   public SerDeStats getSerDeStats() {
-    LOG.info("FIXME getting statistics");
     // We don't support statistics.
     return null;
   }

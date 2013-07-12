@@ -20,7 +20,6 @@
 package org.kiji.hive;
 
 import java.io.IOException;
-import java.util.Iterator;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.ql.exec.FileSinkOperator;
@@ -28,19 +27,14 @@ import org.apache.hadoop.io.Writable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.kiji.hive.utils.KijiDataRequestSerializer;
 import org.kiji.schema.Kiji;
-import org.kiji.schema.KijiDataRequest;
-import org.kiji.schema.KijiDataRequestException;
-import org.kiji.schema.KijiRowData;
-import org.kiji.schema.KijiRowScanner;
 import org.kiji.schema.KijiTable;
-import org.kiji.schema.KijiTableReader;
-import org.kiji.schema.KijiTableReader.KijiScannerOptions;
+import org.kiji.schema.KijiTableWriter;
 import org.kiji.schema.KijiURI;
+import org.kiji.schema.util.ResourceUtils;
 
 /**
- * Reads key-value records from a KijiTableInputSplit (usually 1 region in an HTable).
+ * Writes key-value records from a KijiTableInputSplit (usually 1 region in an HTable).
  */
 public class KijiTableRecordWriter
     implements FileSinkOperator.RecordWriter {
@@ -48,9 +42,7 @@ public class KijiTableRecordWriter
 
   private final Kiji mKiji;
   private final KijiTable mKijiTable;
-  private final KijiTableReader mKijiTableReader;
-  private final KijiRowScanner mScanner;
-  private final Iterator<KijiRowData> mIterator;
+  private final KijiTableWriter mKijiTableWriter;
 
   /**
    * Constructor.
@@ -65,32 +57,20 @@ public class KijiTableRecordWriter
     KijiURI kijiURI = KijiURI.newBuilder(kijiURIString).build();
     mKiji = Kiji.Factory.open(kijiURI);
     mKijiTable = mKiji.openTable(kijiURI.getTable());
-    mKijiTableReader = mKijiTable.openTableReader();
+    mKijiTableWriter = mKijiTable.openTableWriter();
 
-    try {
-      String dataRequestString = conf.get(KijiTableOutputFormat.CONF_KIJI_DATA_REQUEST);
-      if (null == dataRequestString) {
-        throw new RuntimeException("KijiTableOutputFormat was not configured. "
-            + "Please set " + KijiTableOutputFormat.CONF_KIJI_DATA_REQUEST + " in configuration.");
-      }
-      KijiDataRequest dataRequest = KijiDataRequestSerializer.deserialize(
-          dataRequestString);
-
-      KijiScannerOptions scannerOptions = new KijiScannerOptions();
-      mScanner = mKijiTableReader.getScanner(dataRequest, scannerOptions);
-      mIterator = mScanner.iterator();
-    } catch (KijiDataRequestException e) {
-      throw new RuntimeException("Invalid KijiDataRequest.", e);
-    }
   }
 
   @Override
   public void write(Writable w) throws IOException {
-    //To change body of implemented methods use File | Settings | File Templates.
+    LOG.info("Dropping {} on the floor.", w.toString());
   }
 
   @Override
   public void close(boolean abort) throws IOException {
-    //To change body of implemented methods use File | Settings | File Templates.
+    LOG.info("Closing KijiTableRecordWriter");
+    ResourceUtils.closeOrLog(mKijiTableWriter);
+    ResourceUtils.releaseOrLog(mKijiTable);
+    ResourceUtils.releaseOrLog(mKiji);
   }
 }

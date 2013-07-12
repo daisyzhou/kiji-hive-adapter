@@ -39,10 +39,10 @@ import org.kiji.hive.io.KijiRowDataWritable;
 import org.kiji.schema.KijiURI;
 
 /**
- * An input format that reads from Kiji Tables.
+ * An output format that writes to Kiji Tables.
  *
  * <p>
- *   This input format exists in addition to the
+ *   This output format exists in addition to the
  *   {@link org.kiji.mapreduce.framework.KijiTableOutputFormat} because we need one that is
  *   an instance of mapred.InputFormat (not mapreduce.KijiTableOutputFormat) for integration with hive.
  * </p>
@@ -81,7 +81,7 @@ public class KijiTableOutputFormat
 
   @Override
   public RecordWriter<ImmutableBytesWritable, KijiRowDataWritable> getRecordWriter(FileSystem fileSystem, JobConf entries, String s, Progressable progressable) throws IOException {
-    throw new UnsupportedOperationException("getRecordWriter unsupported");
+    throw new UnsupportedOperationException("Hive should not be calling getRecordWriter()");
   }
 
   @Override
@@ -91,7 +91,12 @@ public class KijiTableOutputFormat
   }
 
   @Override
-  public FileSinkOperator.RecordWriter getHiveRecordWriter(JobConf jc, Path finalOutPath, Class<? extends Writable> valueClass, boolean isCompressed, Properties tableProperties, Progressable progress) throws IOException {
+  public FileSinkOperator.RecordWriter getHiveRecordWriter(JobConf jc,
+                                                           Path finalOutPath,
+                                                           Class<? extends Writable> valueClass,
+                                                           boolean isCompressed,
+                                                           Properties tableProperties,
+                                                           Progressable progress) throws IOException {
     LOG.info("Getting record writer.");
     return new KijiTableRecordWriter(jc);
   }
