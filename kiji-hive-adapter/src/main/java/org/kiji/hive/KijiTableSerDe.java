@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hive.serde.Constants;
 import org.apache.hadoop.hive.serde2.SerDe;
@@ -57,6 +58,7 @@ public class KijiTableSerDe implements SerDe {
   /** {@inheritDoc} */
   @Override
   public void initialize(Configuration conf, Properties properties) throws SerDeException {
+    LOG.info("FIXME initializing");
     // Read from the magic property that contains the hive table definition's column names.
     final List<String> columnNames = readPropertyList(properties, Constants.LIST_COLUMNS);
 
@@ -73,16 +75,21 @@ public class KijiTableSerDe implements SerDe {
         .withColumnExpressions(columnExpressions)
         .build();
     try {
+      if(conf == null) {
+        conf = new HBaseConfiguration();
+      }
       conf.set(KijiTableInputFormat.CONF_KIJI_DATA_REQUEST,
           KijiDataRequestSerializer.serialize(mHiveTableDescription.getDataRequest()));
-    } catch (IOException e) {
+    } catch (Exception e) {
       throw new SerDeException("Unable to construct the data request.", e);
     }
+    LOG.info("FIXME done initializing");
   }
 
   /** {@inheritDoc} */
   @Override
   public Class<? extends Writable> getSerializedClass() {
+    LOG.info("FIXME getting serialized class");
     return Result.class;
   }
 
@@ -113,6 +120,7 @@ public class KijiTableSerDe implements SerDe {
   /** {@inheritDoc} */
   @Override
   public SerDeStats getSerDeStats() {
+    LOG.info("FIXME getting statistics");
     // We don't support statistics.
     return null;
   }

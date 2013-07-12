@@ -140,6 +140,7 @@ KIJI_HIVE_ADAPTER_LIB="${KIJI_HIVE_ADAPTER_HOME}lib/"
 # Set metastore_db to the Kiji Hive Adapter root so that invocations from different directions
 # use the same metastore
 HIVE_OPTIONS="--hiveconf javax.jdo.option.ConnectionURL=jdbc:derby:;databaseName=$KIJI_HIVE_ADAPTER_HOME/metastore_db;create=true"
+HIVE_OPTIONS="$HIVE_OPTIONS -hiveconf hive.root.logger=INFO,console"
 
 # First make sure we have everything we need in the environment.
 if [ -z "${KIJI_HOME}" -o ! -d "${KIJI_HOME}" ]; then

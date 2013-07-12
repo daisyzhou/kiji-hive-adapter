@@ -25,6 +25,9 @@ import org.apache.hadoop.hive.ql.metadata.DefaultStorageHandler;
 import org.apache.hadoop.hive.ql.plan.TableDesc;
 import org.apache.hadoop.hive.serde2.SerDe;
 import org.apache.hadoop.mapred.InputFormat;
+import org.apache.hadoop.mapred.OutputFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.kiji.schema.KijiURI;
 
@@ -32,11 +35,22 @@ import org.kiji.schema.KijiURI;
  * A Hive storage handler for reading from Kiji tables (read-only).
  */
 public class KijiTableStorageHandler extends DefaultStorageHandler {
+  private static final Logger LOG = LoggerFactory.getLogger(KijiTableStorageHandler.class);
 
   /** {@inheritDoc} */
   @Override
   public Class<? extends InputFormat> getInputFormatClass() {
     return KijiTableInputFormat.class;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Class<? extends OutputFormat> getOutputFormatClass() {
+    LOG.info("FIXME Getting outputformat.class");
+    LOG.info("FIXME name: "+ KijiTableOutputFormat.class.getName());
+    return KijiTableOutputFormat.class;
   }
 
   /** {@inheritDoc} */
@@ -48,7 +62,19 @@ public class KijiTableStorageHandler extends DefaultStorageHandler {
   /** {@inheritDoc} */
   @Override
   public void configureInputJobProperties(TableDesc tableDesc, Map<String, String> jobProperties) {
+    LOG.info("FIXME Configuring input job properties");
+    configureKijiJobProperties(tableDesc, jobProperties);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void configureOutputJobProperties(TableDesc tableDesc, Map<String, String> jobProperties) {
+    LOG.info("FIXME Configuring output job properties");
+    configureKijiJobProperties(tableDesc, jobProperties);
+  }
+
+  private void configureKijiJobProperties(TableDesc tableDesc, Map<String, String> jobProperties) {
     KijiURI kijiURI = KijiTableInfo.getURIFromProperties(tableDesc.getProperties());
-    jobProperties.put(KijiTableInputFormat.CONF_KIJI_TABLE_URI, kijiURI.toString());
+    jobProperties.put(KijiTableOutputFormat.CONF_KIJI_TABLE_URI, kijiURI.toString());
   }
 }
