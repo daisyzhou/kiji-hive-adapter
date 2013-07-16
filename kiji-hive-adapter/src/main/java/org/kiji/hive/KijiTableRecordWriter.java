@@ -58,7 +58,6 @@ public class KijiTableRecordWriter
     mKiji = Kiji.Factory.open(kijiURI);
     mKijiTable = mKiji.openTable(kijiURI.getTable());
     mKijiTableWriter = mKijiTable.openTableWriter();
-
   }
 
   @Override

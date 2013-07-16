@@ -2,6 +2,9 @@
 
                         Kiji Hive Adapter Release Notes
 
+Version 0.5.0
+  * Kiji Hive Adapter now supports writing of primitive types.  Any tables that already exist in the Hive metastore need to be recreated in order to take advantage of the new classes.
+
 Version 0.4.1
   * KIJIHIVE-26. Default to HBaseRowKey when EntityId components aren't present.
 

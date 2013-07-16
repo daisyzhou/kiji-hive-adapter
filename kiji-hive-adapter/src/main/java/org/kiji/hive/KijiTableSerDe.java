@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Result;
@@ -49,6 +50,7 @@ public class KijiTableSerDe implements SerDe {
   private static final Logger LOG = LoggerFactory.getLogger(KijiTableSerDe.class);
 
   public static final String LIST_COLUMN_EXPRESSIONS = "kiji.columns";
+  public static final String LIST_ENTITY_ID_EXPRESSION = "kiji.entity.id";
 
   /**
    * This contains all the information about a Hive table we need to deserialize effectively.
@@ -67,6 +69,15 @@ public class KijiTableSerDe implements SerDe {
 
     // Read from a property we require that contains the expressions specifying the data to map.
     final List<String> columnExpressions = readPropertyList(properties, LIST_COLUMN_EXPRESSIONS);
+
+    // Read from a property we require that contains the expressions specifying the hive columns
+    // to map back to the Kiji EntityId.
+    final List<String> entityIdExpressions = readPropertyList(properties, LIST_ENTITY_ID_EXPRESSION);
+    LOG.info("FIXME: {}", entityIdExpressions.size());
+
+    if (entityIdExpressions.isEmpty()) {
+      throw new IllegalStateException("Must contain an entityId expression");
+    }
 
     final KijiTableInfo kijiTableInfo = new KijiTableInfo(properties);
     mHiveTableDescription = HiveTableDescription.newBuilder()
@@ -135,6 +146,9 @@ public class KijiTableSerDe implements SerDe {
    * @return A list of the comma-separated fields in the property value.
    */
   private static List<String> readPropertyList(Properties properties, String name) {
+    //FIXME Better validation for kiji.entity.id
+    Preconditions.checkState(properties.containsKey(name),
+        "Missing SERDEPROPERTIES configuration for: " + name);
     return Arrays.asList(properties.getProperty(name).split(","));
   }
 }
