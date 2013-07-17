@@ -36,6 +36,9 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericFixed;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.hadoop.hive.ql.exec.ByteWritable;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.hadoop.hive.serde2.io.ShortWritable;
 import org.apache.hadoop.hive.serde2.lazy.ByteArrayRef;
 import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.MapTypeInfo;
@@ -43,6 +46,13 @@ import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.StructTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.UnionTypeInfo;
+import org.apache.hadoop.io.BooleanWritable;
+import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
 
 /**
  * Converts an Avro data object to an in-memory representation for Hive.
@@ -213,4 +223,51 @@ public final class AvroTypeAdapter {
   }
 
   //FIXME write some classes to convert from these hive objects back to the raw writable types.
+
+  /**
+   * Converts data from Hive primitive type into a Writable type that can later be put into a Kiji table.
+   *
+   * @param primitiveType The target Hive type.
+   * @param hiveObject          The hiveObject datum.
+   * @return The converted Hive object.
+   */
+  public Object toWritableType(PrimitiveTypeInfo primitiveType, Object hiveObject) {
+    switch (primitiveType.getPrimitiveCategory()) {
+      case VOID: // Like the hiveObject null type, right?
+        return NullWritable.get();
+      case BYTE:
+        Byte byteObject = (Byte) hiveObject;
+        return new ByteWritable(byteObject);
+      case SHORT:
+        Short shortObject = (Short) hiveObject;
+        return new ShortWritable(shortObject);
+      case BOOLEAN:
+        Boolean booleanObject = (Boolean) hiveObject;
+        return new BooleanWritable(booleanObject);
+      case INT:
+        Integer intObject = (Integer) hiveObject;
+        return new IntWritable(intObject);
+      case LONG:
+        Long longObject = (Long) hiveObject;
+        return new LongWritable(longObject);
+      case FLOAT:
+        Float floatObject = (Float) hiveObject;
+        return new FloatWritable(floatObject);
+      case DOUBLE:
+        Double doubleObject = (Double) hiveObject;
+        return new DoubleWritable(doubleObject);
+      case STRING:
+        String stringObject = (String) hiveObject;
+        return new Text(stringObject);
+      case TIMESTAMP:
+        Timestamp timestampObject = (Timestamp) hiveObject;
+        return new LongWritable(timestampObject.getTime());
+      case BINARY:
+        //FIXME make sure that this is the right thing to do.
+        ByteArrayRef byteArrayRefObject = (ByteArrayRef) hiveObject;
+        return new BytesWritable(byteArrayRefObject.getData());
+      default:
+        throw new IncompatibleTypeException(primitiveType, hiveObject);
+    }
+  }
 }
