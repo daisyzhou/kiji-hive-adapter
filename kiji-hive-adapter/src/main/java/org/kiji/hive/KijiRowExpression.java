@@ -98,8 +98,27 @@ public class KijiRowExpression {
    *
    * @return The data request.
    */
+  public KijiColumnName getColumnName() {
+    return mExpression.getColumnName();
+  }
+
+  /**
+   * Gets the data request required to evaluate this expression.
+   *
+   * @return The data request.
+   */
   public KijiDataRequest getDataRequest() {
     return mExpression.getDataRequest();
+  }
+
+  /**
+   * Determines whether this expression is mapped to KijiCell(s) or not(rowkey information would
+   * result in false for example).
+   *
+   * @return whether this expression is mapped to KijiCell(s).
+   */
+  public boolean isCellData() {
+    return mExpression instanceof ValueExpression;
   }
 
   /**
@@ -113,7 +132,7 @@ public class KijiRowExpression {
    */
   private interface Expression {
     /**
-     * Determies whether the expression represents a value (not an operator).
+     * Determines whether the expression represents a value (not an operator).
      *
      * @return Whether this expression is a value.
      */
@@ -143,6 +162,13 @@ public class KijiRowExpression {
      * @return The result.
      */
     Object eval(List<Object> operandValues);
+
+    /**
+     * Gets the column name.
+     *
+     * @return The KijiColumnName
+     */
+    KijiColumnName getColumnName();
 
     /**
      * Gets the data request required to evaluate this expression.
@@ -207,6 +233,12 @@ public class KijiRowExpression {
     @Override
     public Object eval(List<Object> operandValues) {
       throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public KijiColumnName getColumnName() {
+      return mKijiColumnName;
     }
 
     /**
@@ -275,6 +307,11 @@ public class KijiRowExpression {
     /** {@inheritDoc} */
     @Override
     public Object eval(List<Object> operandValues) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public KijiColumnName getColumnName() {
       throw new UnsupportedOperationException();
     }
   }
@@ -355,6 +392,11 @@ public class KijiRowExpression {
     /** {@inheritDoc} */
     @Override
     public Object eval(List<Object> operandValues) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public KijiColumnName getColumnName() {
       throw new UnsupportedOperationException();
     }
   }

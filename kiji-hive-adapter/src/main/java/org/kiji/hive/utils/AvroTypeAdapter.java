@@ -211,4 +211,6 @@ public final class AvroTypeAdapter {
       throw new IncompatibleTypeException(primitiveType, avro);
     }
   }
+
+  //FIXME write some classes to convert from these hive objects back to the raw writable types.
 }

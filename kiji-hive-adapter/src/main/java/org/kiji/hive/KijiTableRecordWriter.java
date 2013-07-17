@@ -21,12 +21,14 @@ package org.kiji.hive;
 
 import java.io.IOException;
 
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.ql.exec.FileSinkOperator;
 import org.apache.hadoop.io.Writable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.kiji.hive.io.KijiRowDataWritable;
 import org.kiji.schema.Kiji;
 import org.kiji.schema.KijiTable;
 import org.kiji.schema.KijiTableWriter;
@@ -62,6 +64,9 @@ public class KijiTableRecordWriter
 
   @Override
   public void write(Writable w) throws IOException {
+    Preconditions.checkArgument(w instanceof KijiRowDataWritable,
+        "KijiTableRecordWriter can only operate on KijiRowDataWritable objects.");
+    KijiRowDataWritable kijiRowDataWritable = (KijiRowDataWritable) w;
     LOG.info("Dropping {} on the floor.", w.toString());
   }
 

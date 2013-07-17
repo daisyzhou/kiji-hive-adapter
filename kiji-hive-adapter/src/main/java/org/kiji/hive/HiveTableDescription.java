@@ -26,6 +26,7 @@ import java.util.List;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StandardStructObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.StructTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import org.kiji.hive.io.KijiRowDataWritable;
 import org.kiji.hive.utils.DataRequestOptimizer;
+import org.kiji.schema.KijiColumnName;
 import org.kiji.schema.KijiDataRequest;
 
 /**
@@ -55,6 +57,9 @@ public final class HiveTableDescription {
   /** The column expressions describing how to map data from the Kiji table into the columns. */
   private final List<KijiRowExpression> mExpressions;
 
+  /** The columns that comprise the entityId. */
+  private final List<String> mEntityIdColumns;
+
   /** The data request we'll use to read from the kiji table. */
   private final KijiDataRequest mDataRequest;
 
@@ -63,6 +68,7 @@ public final class HiveTableDescription {
     private List<String> mColumnNames;
     private List<TypeInfo> mColumnTypes;
     private List<String> mColumnExpressions;
+    private List<String> mEntityIdColumns;
 
     /** True if we already built an object. */
     private boolean mIsBuilt = false;
@@ -100,6 +106,18 @@ public final class HiveTableDescription {
     public HiveTableDescriptionBuilder withColumnExpressions(List<String> columnExpressions) {
       checkNotBuilt();
       mColumnExpressions = columnExpressions;
+      return this;
+    }
+
+    /**
+     * Sets the Kiji EntityId columns
+     *
+     * @param entityIdColumns The Kiji row expressions.
+     * @return This instance.
+     */
+    public HiveTableDescriptionBuilder withEntityIdColumns(List<String> entityIdColumns) {
+      checkNotBuilt();
+      mEntityIdColumns = entityIdColumns;
       return this;
     }
 
@@ -158,6 +176,9 @@ public final class HiveTableDescription {
       mExpressions.add(new KijiRowExpression(expression, typeInfo));
     }
 
+    mEntityIdColumns = builder.mEntityIdColumns;
+    //FIXME validate EntityId columns against the what was actually passed in to make sure that we've got a fully covering set.
+
     mDataRequest = DataRequestOptimizer.getDataRequest(mExpressions);
   }
 
@@ -204,7 +225,7 @@ public final class HiveTableDescription {
 
   /**
    * Creates the in-memory row object that contains the column data in the hive table.
-   * <p/>
+   *
    * <p>The returned object will be given to the object inspector for
    * extracting column data. Since our object inspector is the
    * standard java inspector, the structure of the object returned
@@ -215,8 +236,29 @@ public final class HiveTableDescription {
    * @throws IOException If there is an IO error.
    */
   public KijiRowDataWritable createWritableObject(Object columnData, ObjectInspector objectInspector) throws IOException {
-    LOG.info("Inspecting: " + objectInspector.toString());
+    Preconditions.checkArgument(objectInspector instanceof StandardStructObjectInspector);
+    StandardStructObjectInspector structObjectInspector = (StandardStructObjectInspector) objectInspector;
+
+    // Hive passes us a struct that should have all columns that are specified in the Hive table description.
+    Preconditions.checkState(mExpressions.size() == structObjectInspector.getAllStructFieldRefs().size(),
+        "Table has {} columns, but query has {} columns",
+        mExpressions.size(),
+        structObjectInspector.getAllStructFieldRefs().size());
+
+    LOG.info("Inspecting: " + structObjectInspector.toString());
+    for(int c=0; c<mExpressions.size(); c++) {
+      if(mExpressions.get(c).isCellData()) {
+        KijiColumnName kijiColumnName = mExpressions.get(c).getColumnName();
+        LOG.info("Processing: " + kijiColumnName);
+        ObjectInspector fieldObjectInspector = structObjectInspector.getAllStructFieldRefs().get(c).getFieldObjectInspector();
+        LOG.info("OI: " + fieldObjectInspector);
+        //FIXME build the relevant writable data.
+
+      }
+    }
+
     KijiRowDataWritable kijiRowData = new KijiRowDataWritable();
+    //FIXME do awesome things.
     return kijiRowData;
   }
 }
