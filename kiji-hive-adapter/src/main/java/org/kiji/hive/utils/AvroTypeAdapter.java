@@ -40,6 +40,7 @@ import org.apache.hadoop.hive.ql.exec.ByteWritable;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.io.ShortWritable;
 import org.apache.hadoop.hive.serde2.lazy.ByteArrayRef;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.MapTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
@@ -53,6 +54,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.Writable;
 
 /**
  * Converts an Avro data object to an in-memory representation for Hive.
@@ -222,17 +224,83 @@ public final class AvroTypeAdapter {
     }
   }
 
-  //FIXME write some classes to convert from these hive objects back to the raw writable types.
+  /**
+   * Converts a piece Hive data to a Writable object.  This method will recursively
+   * unpack the objects for any non-primitive types.
+   *
+   * @param hiveType The type of the target hive object.
+   * @param hiveObject     The hiveObject data to convert.
+   * @param schema   The schema the passed in type.
+   * @return The converted hive datum, compatible with the standard object inspector.
+   */
+  public Object toWritableType(TypeInfo hiveType, Object hiveObject, Schema schema) {
+
+    //FIXME this needs to be adapted to be the right thing.
+    if (null == hiveObject) {
+      return null;
+    }
+
+    switch (hiveType.getCategory()) {
+      case PRIMITIVE:
+        return toHiveType((PrimitiveTypeInfo) hiveType, hiveObject);
+      case LIST:
+        HiveList<Object> hiveList = new HiveList<Object>();
+        @SuppressWarnings("unchecked")
+        final List<Object> avroList = (List<Object>) hiveObject;
+        final TypeInfo listElementType = ((ListTypeInfo) hiveType).getListElementTypeInfo();
+        for (Object avroElement : avroList) {
+          hiveList.add(toHiveType(listElementType, avroElement, schema.getElementType()));
+        }
+        return hiveList;
+      case MAP:
+        HiveMap<String, Object> hiveMap = new HiveMap<String, Object>();
+        @SuppressWarnings("unchecked")
+        final Map<CharSequence, Object> avroMap = (Map<CharSequence, Object>) hiveObject;
+        final TypeInfo mapValueType = ((MapTypeInfo) hiveType).getMapValueTypeInfo();
+        for (Map.Entry<CharSequence, Object> avroEntry : avroMap.entrySet()) {
+          String entryKey = avroEntry.getKey().toString();
+          Object entryValue = toHiveType(mapValueType, avroEntry.getValue(), schema.getValueType());
+          hiveMap.put(entryKey, entryValue);
+        }
+        return hiveMap;
+      case STRUCT:
+        HiveStruct hiveStruct = new HiveStruct();
+        final GenericRecord avroRecord = (GenericRecord) hiveObject;
+        final StructTypeInfo hiveStructType = (StructTypeInfo) hiveType;
+        List<Schema> schemaList = Lists.newArrayList();
+        for (Schema.Field field : schema.getFields()) {
+          schemaList.add(field.schema());
+        }
+        for (int i = 0; i < hiveStructType.getAllStructFieldNames().size(); i++) {
+          final String fieldName = hiveStructType.getAllStructFieldNames().get(i);
+          final TypeInfo fieldType = hiveStructType.getAllStructFieldTypeInfos().get(i);
+          hiveStruct.add(toHiveType(fieldType, avroRecord.get(fieldName), schemaList.get(i)));
+        }
+        return hiveStruct;
+      case UNION:
+        HiveUnion hiveUnion = new HiveUnion();
+        final Integer tag = GenericData.get().resolveUnion(schema, hiveObject);
+        hiveUnion.setTag(tag.byteValue());
+        Schema unionSubSchema = schema.getTypes().get(tag);
+
+        final UnionTypeInfo hiveUnionType = (UnionTypeInfo) hiveType;
+        final TypeInfo unionSubType = hiveUnionType.getAllUnionObjectTypeInfos().get(tag);
+        hiveUnion.setObject(toHiveType(unionSubType, hiveObject, unionSubSchema));
+        return hiveUnion;
+      default:
+        throw new IncompatibleTypeException(hiveType, hiveObject);
+    }
+  }
 
   /**
    * Converts data from Hive primitive type into a Writable type that can later be put into a Kiji table.
    *
-   * @param primitiveType The target Hive type.
+   * @param primitiveObjectInspector The target Hive type.
    * @param hiveObject          The hiveObject datum.
    * @return The converted Hive object.
    */
-  public Object toWritableType(PrimitiveTypeInfo primitiveType, Object hiveObject) {
-    switch (primitiveType.getPrimitiveCategory()) {
+  public Writable toWritableType(PrimitiveObjectInspector primitiveObjectInspector, Object hiveObject) {
+    switch (primitiveObjectInspector.getPrimitiveCategory()) {
       case VOID: // Like the hiveObject null type, right?
         return NullWritable.get();
       case BYTE:
@@ -267,7 +335,7 @@ public final class AvroTypeAdapter {
         ByteArrayRef byteArrayRefObject = (ByteArrayRef) hiveObject;
         return new BytesWritable(byteArrayRefObject.getData());
       default:
-        throw new IncompatibleTypeException(primitiveType, hiveObject);
+        throw new IncompatibleTypeException(primitiveObjectInspector, hiveObject);
     }
   }
 }
