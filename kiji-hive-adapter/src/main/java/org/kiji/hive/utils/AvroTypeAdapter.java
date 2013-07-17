@@ -40,21 +40,30 @@ import org.apache.hadoop.hive.ql.exec.ByteWritable;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.io.ShortWritable;
 import org.apache.hadoop.hive.serde2.lazy.ByteArrayRef;
+import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.MapObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StructField;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.MapTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.StructTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.UnionTypeInfo;
+import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Converts an Avro data object to an in-memory representation for Hive.
@@ -65,6 +74,8 @@ import org.apache.hadoop.io.Writable;
  * "Standard" for details about how each Hive type should be formatted.</p>
  */
 public final class AvroTypeAdapter {
+  private static final Logger LOG = LoggerFactory.getLogger(AvroTypeAdapter.class);
+
   /** Private constructor to prevent instantiation. Use get() to get an instance of this. */
   private AvroTypeAdapter() {}
 
@@ -228,67 +239,64 @@ public final class AvroTypeAdapter {
    * Converts a piece Hive data to a Writable object.  This method will recursively
    * unpack the objects for any non-primitive types.
    *
-   * @param hiveType The type of the target hive object.
+   * @param objectInspector The type of the target hive object.
    * @param hiveObject     The hiveObject data to convert.
-   * @param schema   The schema the passed in type.
    * @return The converted hive datum, compatible with the standard object inspector.
    */
-  public Object toWritableType(TypeInfo hiveType, Object hiveObject, Schema schema) {
+  public Writable toWritableType(ObjectInspector objectInspector, Object hiveObject) {
 
     //FIXME this needs to be adapted to be the right thing.
     if (null == hiveObject) {
-      return null;
+      return NullWritable.get();
     }
 
-    switch (hiveType.getCategory()) {
+    switch (objectInspector.getCategory()) {
       case PRIMITIVE:
-        return toHiveType((PrimitiveTypeInfo) hiveType, hiveObject);
+        return toWritableType((PrimitiveObjectInspector) objectInspector, hiveObject);
       case LIST:
-        HiveList<Object> hiveList = new HiveList<Object>();
-        @SuppressWarnings("unchecked")
-        final List<Object> avroList = (List<Object>) hiveObject;
-        final TypeInfo listElementType = ((ListTypeInfo) hiveType).getListElementTypeInfo();
-        for (Object avroElement : avroList) {
-          hiveList.add(toHiveType(listElementType, avroElement, schema.getElementType()));
-        }
-        return hiveList;
-      case MAP:
-        HiveMap<String, Object> hiveMap = new HiveMap<String, Object>();
-        @SuppressWarnings("unchecked")
-        final Map<CharSequence, Object> avroMap = (Map<CharSequence, Object>) hiveObject;
-        final TypeInfo mapValueType = ((MapTypeInfo) hiveType).getMapValueTypeInfo();
-        for (Map.Entry<CharSequence, Object> avroEntry : avroMap.entrySet()) {
-          String entryKey = avroEntry.getKey().toString();
-          Object entryValue = toHiveType(mapValueType, avroEntry.getValue(), schema.getValueType());
-          hiveMap.put(entryKey, entryValue);
-        }
-        return hiveMap;
-      case STRUCT:
-        HiveStruct hiveStruct = new HiveStruct();
-        final GenericRecord avroRecord = (GenericRecord) hiveObject;
-        final StructTypeInfo hiveStructType = (StructTypeInfo) hiveType;
-        List<Schema> schemaList = Lists.newArrayList();
-        for (Schema.Field field : schema.getFields()) {
-          schemaList.add(field.schema());
-        }
-        for (int i = 0; i < hiveStructType.getAllStructFieldNames().size(); i++) {
-          final String fieldName = hiveStructType.getAllStructFieldNames().get(i);
-          final TypeInfo fieldType = hiveStructType.getAllStructFieldTypeInfos().get(i);
-          hiveStruct.add(toHiveType(fieldType, avroRecord.get(fieldName), schemaList.get(i)));
-        }
-        return hiveStruct;
-      case UNION:
-        HiveUnion hiveUnion = new HiveUnion();
-        final Integer tag = GenericData.get().resolveUnion(schema, hiveObject);
-        hiveUnion.setTag(tag.byteValue());
-        Schema unionSubSchema = schema.getTypes().get(tag);
+        ListObjectInspector listObjectInspector = (ListObjectInspector) objectInspector;
+        ObjectInspector elementObjectInspector = listObjectInspector.getListElementObjectInspector();
 
-        final UnionTypeInfo hiveUnionType = (UnionTypeInfo) hiveType;
-        final TypeInfo unionSubType = hiveUnionType.getAllUnionObjectTypeInfos().get(tag);
-        hiveUnion.setObject(toHiveType(unionSubType, hiveObject, unionSubSchema));
-        return hiveUnion;
+        List hiveList = listObjectInspector.getList(hiveObject);
+
+        Writable[] writableArray = new Writable[hiveList.size()];
+        for(int c=0; c<hiveList.size(); c++) {
+          Object obj = hiveList.get(c);
+          Writable writableObj = toWritableType(elementObjectInspector, obj);
+          writableArray[c] = writableObj;
+        }
+        return new ArrayWritable(Writable.class, writableArray);
+      case MAP:
+        MapObjectInspector mapObjectInspector = (MapObjectInspector) objectInspector;
+        ObjectInspector keyObjectInspector = mapObjectInspector.getMapKeyObjectInspector();
+        ObjectInspector valueObjectInspector = mapObjectInspector.getMapValueObjectInspector();
+        MapWritable mapWritable = new MapWritable();
+
+        @SuppressWarnings("unchecked")
+        Map hiveMap = mapObjectInspector.getMap(hiveObject);
+        for(Object entryObj : hiveMap.entrySet()) {
+          Map.Entry entry = (Map.Entry) entryObj;
+          Writable key = toWritableType(keyObjectInspector, entry.getKey());
+          Writable value = toWritableType(valueObjectInspector, entry.getValue());
+          mapWritable.put(key, value);
+        }
+        return mapWritable;
+      case STRUCT:
+        StructObjectInspector structObjectInspector = (StructObjectInspector) objectInspector;
+
+        List<StructField> structFields = (List<StructField>) structObjectInspector.getAllStructFieldRefs();
+        Writable[] writableStruct = new Writable[structFields.size()];
+        for(int c=0; c<structFields.size(); c++) {
+          StructField structField = structFields.get(c);
+          Object fieldObject = structObjectInspector.getStructFieldData(hiveObject, structField);
+          Writable writableFieldObj = toWritableType(structField.getFieldObjectInspector(), fieldObject);
+          writableStruct[c] = writableFieldObj;
+        }
+        return new ArrayWritable(Writable.class, writableStruct);
+      case UNION:
+        throw new UnsupportedOperationException("UNION type not supported");
       default:
-        throw new IncompatibleTypeException(hiveType, hiveObject);
+        throw new UnsupportedOperationException("Unknown type: " + objectInspector);
     }
   }
 
@@ -335,7 +343,7 @@ public final class AvroTypeAdapter {
         ByteArrayRef byteArrayRefObject = (ByteArrayRef) hiveObject;
         return new BytesWritable(byteArrayRefObject.getData());
       default:
-        throw new IncompatibleTypeException(primitiveObjectInspector, hiveObject);
+        throw new UnsupportedOperationException("Unknown type: " + primitiveObjectInspector);
     }
   }
 }

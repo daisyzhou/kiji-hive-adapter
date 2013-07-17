@@ -31,10 +31,12 @@ import org.apache.hadoop.hive.serde2.typeinfo.StructTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils;
+import org.apache.hadoop.io.Writable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.kiji.hive.io.KijiRowDataWritable;
+import org.kiji.hive.utils.AvroTypeAdapter;
 import org.kiji.hive.utils.DataRequestOptimizer;
 import org.kiji.schema.KijiColumnName;
 import org.kiji.schema.KijiDataRequest;
@@ -245,6 +247,9 @@ public final class HiveTableDescription {
         mExpressions.size(),
         structObjectInspector.getAllStructFieldRefs().size());
 
+
+    List<Object> structColumnData = structObjectInspector.getStructFieldsDataAsList(columnData);
+
     LOG.info("Inspecting: " + structObjectInspector.toString());
     for(int c=0; c<mExpressions.size(); c++) {
       if(mExpressions.get(c).isCellData()) {
@@ -252,6 +257,7 @@ public final class HiveTableDescription {
         LOG.info("Processing: " + kijiColumnName);
         ObjectInspector fieldObjectInspector = structObjectInspector.getAllStructFieldRefs().get(c).getFieldObjectInspector();
         LOG.info("OI: " + fieldObjectInspector);
+        Writable writableObj = AvroTypeAdapter.get().toWritableType(fieldObjectInspector, structColumnData.get(c));
         //FIXME build the relevant writable data.
 
       }
