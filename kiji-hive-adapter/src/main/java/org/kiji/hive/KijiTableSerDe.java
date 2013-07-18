@@ -84,6 +84,7 @@ public class KijiTableSerDe implements SerDe {
         .withColumnNames(columnNames)
         .withColumnTypes(TypeInfoUtils.getTypeInfosFromTypeString(columnTypes))
         .withColumnExpressions(columnExpressions)
+        .withEntityIdColumns(entityIdExpressions)
         .build();
     try {
       if(conf == null) {

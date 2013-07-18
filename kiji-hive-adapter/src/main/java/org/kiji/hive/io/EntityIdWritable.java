@@ -28,6 +28,7 @@ import java.util.List;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableUtils;
 import org.slf4j.Logger;
@@ -76,6 +77,22 @@ public class EntityIdWritable implements Writable {
       mComponents = Collections.singletonList((Object) asciiRowKey);
     }
     mShellString = entityId.toShellString();
+  }
+
+  /** FIXME build from components */
+  public EntityIdWritable(List<Object> components) {
+    mHBaseRowKey = new byte[0];
+    mComponents = components;
+    mShellString = "";
+  }
+
+  /**
+   * FIXME build from components
+   */
+  public EntityIdWritable(Text shellString) {
+    mHBaseRowKey = new byte[0];
+    mComponents = Lists.newArrayList();
+    mShellString = shellString.toString();
   }
 
   /** @return the HBase row key. */

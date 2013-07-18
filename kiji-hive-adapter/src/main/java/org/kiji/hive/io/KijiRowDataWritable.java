@@ -68,6 +68,12 @@ public class KijiRowDataWritable implements Writable {
   public KijiRowDataWritable() {
   }
 
+  public KijiRowDataWritable(EntityIdWritable entityIdWritable,
+                             Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> writableData) {
+    mEntityId = entityIdWritable;
+    mWritableData = writableData;
+  }
+
   /**
    * Constructs a KijiRowDataWritable from a existing KijiRowData.
    * @param rowData the source of the fields to copy.
@@ -97,6 +103,11 @@ public class KijiRowDataWritable implements Writable {
         }
       }
     }
+  }
+
+  //FIXME We can do better than this naked call
+  public Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> getData() {
+    return mWritableData;
   }
 
   /**

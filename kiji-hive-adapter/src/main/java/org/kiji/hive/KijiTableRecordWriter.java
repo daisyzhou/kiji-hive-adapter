@@ -20,6 +20,8 @@
 package org.kiji.hive;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.NavigableMap;
 
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
@@ -28,11 +30,16 @@ import org.apache.hadoop.io.Writable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.kiji.hive.io.KijiCellWritable;
 import org.kiji.hive.io.KijiRowDataWritable;
+import org.kiji.schema.EntityId;
 import org.kiji.schema.Kiji;
+import org.kiji.schema.KijiColumnName;
 import org.kiji.schema.KijiTable;
 import org.kiji.schema.KijiTableWriter;
 import org.kiji.schema.KijiURI;
+import org.kiji.schema.layout.KijiTableLayout;
+import org.kiji.schema.tools.ToolUtils;
 import org.kiji.schema.util.ResourceUtils;
 
 /**
@@ -67,6 +74,20 @@ public class KijiTableRecordWriter
     Preconditions.checkArgument(w instanceof KijiRowDataWritable,
         "KijiTableRecordWriter can only operate on KijiRowDataWritable objects.");
     KijiRowDataWritable kijiRowDataWritable = (KijiRowDataWritable) w;
+    KijiTableLayout kijiTableLayout = mKijiTable.getLayout();
+    EntityId eid = ToolUtils.createEntityIdFromUserInputs(kijiRowDataWritable.getEntityId().toShellString(), kijiTableLayout);
+    Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> writableData = kijiRowDataWritable.getData();
+    for(Map.Entry<KijiColumnName, NavigableMap<Long, KijiCellWritable>> entry : writableData.entrySet()) {
+      KijiColumnName kijiColumnName = entry.getKey();
+      String family = kijiColumnName.getFamily();
+      String qualifier = kijiColumnName.getQualifier();
+      //FIXME we throw away the redundant timestamp, but maybe we want to do validation.
+      for(KijiCellWritable kijiCellWritable : entry.getValue().values()) {
+        LOG.info("Writing {}:{} at {} with {}", family, qualifier, kijiCellWritable.getTimestamp(), kijiCellWritable.getData().toString());
+        mKijiTableWriter.put(eid, family, qualifier, kijiCellWritable.getTimestamp(), kijiCellWritable.getData().toString());
+      }
+
+    }
     LOG.info("Dropping {} on the floor.", w.toString());
   }
 

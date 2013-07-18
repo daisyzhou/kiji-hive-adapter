@@ -22,19 +22,24 @@ package org.kiji.hive;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StandardStructObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.StructTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils;
-import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.io.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.kiji.hive.io.EntityIdWritable;
+import org.kiji.hive.io.KijiCellWritable;
 import org.kiji.hive.io.KijiRowDataWritable;
 import org.kiji.hive.utils.AvroTypeAdapter;
 import org.kiji.hive.utils.DataRequestOptimizer;
@@ -60,7 +65,7 @@ public final class HiveTableDescription {
   private final List<KijiRowExpression> mExpressions;
 
   /** The columns that comprise the entityId. */
-  private final List<String> mEntityIdColumns;
+  private final List<Integer> mEntityIdColumnIndexes;
 
   /** The data request we'll use to read from the kiji table. */
   private final KijiDataRequest mDataRequest;
@@ -178,7 +183,14 @@ public final class HiveTableDescription {
       mExpressions.add(new KijiRowExpression(expression, typeInfo));
     }
 
-    mEntityIdColumns = builder.mEntityIdColumns;
+    mEntityIdColumnIndexes = Lists.newArrayList();
+    for(String entityIdColumn : builder.mEntityIdColumns) {
+      Integer index = builder.mColumnNames.indexOf(entityIdColumn);
+      Preconditions.checkArgument(-1 != index,
+          "EntityIdColumn {} not found in column list.", entityIdColumn);
+
+      mEntityIdColumnIndexes.add(index);
+    }
     //FIXME validate EntityId columns against the what was actually passed in to make sure that we've got a fully covering set.
 
     mDataRequest = DataRequestOptimizer.getDataRequest(mExpressions);
@@ -247,23 +259,38 @@ public final class HiveTableDescription {
         mExpressions.size(),
         structObjectInspector.getAllStructFieldRefs().size());
 
-
     List<Object> structColumnData = structObjectInspector.getStructFieldsDataAsList(columnData);
 
+    // FIXME do the actual right thing here.
+    Integer entityIdColumn = mEntityIdColumnIndexes.get(0);
+    Object entityIdObject = structObjectInspector.getStructFieldsDataAsList(columnData).get(entityIdColumn);
+    Text entityIdShellString = (Text) AvroTypeAdapter.get().toWritableType(structObjectInspector.getAllStructFieldRefs().get(entityIdColumn).getFieldObjectInspector(), entityIdObject);
+    LOG.info("EntityId: " + entityIdShellString.toString());
+    EntityIdWritable eidw = new EntityIdWritable(entityIdShellString);
+
     LOG.info("Inspecting: " + structObjectInspector.toString());
+    Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> writableData = Maps.newHashMap();
     for(int c=0; c<mExpressions.size(); c++) {
       if(mExpressions.get(c).isCellData()) {
         KijiColumnName kijiColumnName = mExpressions.get(c).getColumnName();
+        ObjectInspector colObjectInspector = structObjectInspector.getAllStructFieldRefs().get(c).getFieldObjectInspector();
+        NavigableMap<Long, KijiCellWritable> wd = mExpressions.get(c).convertToTimeSeries(colObjectInspector, structColumnData.get(c));
+
+        //FIXME we probably need to merge this in at some point rather than flat out replacing.
+        writableData.put(kijiColumnName, wd);
+
+        /* FIXME DELETE
         LOG.info("Processing: " + kijiColumnName);
         ObjectInspector fieldObjectInspector = structObjectInspector.getAllStructFieldRefs().get(c).getFieldObjectInspector();
         LOG.info("OI: " + fieldObjectInspector);
         Writable writableObj = AvroTypeAdapter.get().toWritableType(fieldObjectInspector, structColumnData.get(c));
+         */
         //FIXME build the relevant writable data.
 
       }
     }
 
-    KijiRowDataWritable kijiRowData = new KijiRowDataWritable();
+    KijiRowDataWritable kijiRowData = new KijiRowDataWritable(eidw, writableData);
     //FIXME do awesome things.
     return kijiRowData;
   }

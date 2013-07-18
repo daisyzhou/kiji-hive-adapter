@@ -66,6 +66,11 @@ public class KijiCellWritable implements Writable {
     mData = kijiCell.getData();
   }
 
+  public KijiCellWritable(Long timestamp, Object data) {
+    mTimestamp = timestamp;
+    mData = data;
+  }
+
   /**
    * @return The timestamp associated with this cell.
    */
