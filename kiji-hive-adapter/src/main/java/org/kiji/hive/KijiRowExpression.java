@@ -33,6 +33,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
@@ -775,7 +776,22 @@ public class KijiRowExpression {
     /** {@inheritDoc} */
     @Override
     public NavigableMap<Long, KijiCellWritable> convertToTimeSeries(ObjectInspector objectInspector, Object hiveObject) {
-      throw new UnsupportedOperationException();
+      NavigableMap<Long, KijiCellWritable> timeseries = Maps.newTreeMap();
+
+      ListObjectInspector listObjectInspector = (ListObjectInspector) objectInspector;
+      List<Object> listObjects = (List<Object>) listObjectInspector.getList(hiveObject);
+      StructObjectInspector structObjectInspector = (StructObjectInspector) listObjectInspector.getListElementObjectInspector();
+      for(Object obj : listObjects) {
+        List<Object> fieldsData = structObjectInspector.getStructFieldsDataAsList(obj);
+        Preconditions.checkArgument(fieldsData.size() == 2, "ColumnFlatValueExpression with more than two fields");
+        Timestamp timestampObject = (Timestamp) fieldsData.get(0);
+        Long timestamp = timestampObject.getTime();
+
+        //FIXME this assumes primitive types.
+        KijiCellWritable kijiCellWritable = new KijiCellWritable(timestamp, fieldsData.get(1));
+        timeseries.put(timestamp, kijiCellWritable);
+      }
+      return timeseries;
     }
   }
 
