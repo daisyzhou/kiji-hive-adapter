@@ -49,8 +49,18 @@ import org.kiji.hive.utils.KijiDataRequestSerializer;
 public class KijiTableSerDe implements SerDe {
   private static final Logger LOG = LoggerFactory.getLogger(KijiTableSerDe.class);
 
+  // Property for specifying which columns are used within a Hive view.
   public static final String LIST_COLUMN_EXPRESSIONS = "kiji.columns";
-  public static final String LIST_ENTITY_ID_EXPRESSION = "kiji.entity.id";
+
+  // Property for specifying which column represents the EntityId's shell string.
+  // Cannot be specified at the same time as LIST_ENTITY_ID_COMPONENTS.
+  public static final String ENTITY_ID_SHELL_STRING = "kiji.entity.id.shell.string";
+
+  // Property specifying a list of Hive columns which represent the EntityId.
+  // Cannot be specified at the same time as ENTITY_ID_SHELL_STRING.
+  // FIXME this feature isn't yet supported, but can come as a later patch.
+  // Make a ticket and prioritize it accordingly.
+  public static final String LIST_ENTITY_ID_COMPONENTS = "kiji.entity.id.columns";
 
   /**
    * This contains all the information about a Hive table we need to deserialize effectively.
@@ -60,7 +70,6 @@ public class KijiTableSerDe implements SerDe {
   /** {@inheritDoc} */
   @Override
   public void initialize(Configuration conf, Properties properties) throws SerDeException {
-    LOG.info("FIXME initializing");
     // Read from the magic property that contains the hive table definition's column names.
     final List<String> columnNames = readPropertyList(properties, Constants.LIST_COLUMNS);
 
@@ -68,23 +77,25 @@ public class KijiTableSerDe implements SerDe {
     final String columnTypes = properties.getProperty(Constants.LIST_COLUMN_TYPES);
 
     // Read from a property we require that contains the expressions specifying the data to map.
+    Preconditions.checkArgument(properties.containsKey(LIST_COLUMN_EXPRESSIONS),
+        "SERDEPROPERTIES missing configuration for property: {}", LIST_COLUMN_EXPRESSIONS);
     final List<String> columnExpressions = readPropertyList(properties, LIST_COLUMN_EXPRESSIONS);
 
-    // Read from a property we require that contains the expressions specifying the hive columns
-    // to map back to the Kiji EntityId.
-    final List<String> entityIdExpressions = readPropertyList(properties, LIST_ENTITY_ID_EXPRESSION);
-    LOG.info("FIXME: {}", entityIdExpressions.size());
+    // Check that at least one of LIST_ENTITY_ID_COMPONENTS or ENTITY_ID_SHELL_STRING is unspecified.
+    Preconditions.checkArgument(!properties.containsKey(ENTITY_ID_SHELL_STRING) ||
+        !properties.containsKey(LIST_ENTITY_ID_COMPONENTS),
+        "SERDEPROPERTIES cannot specify both: " + ENTITY_ID_SHELL_STRING + " and" + LIST_ENTITY_ID_COMPONENTS);
 
-    if (entityIdExpressions.isEmpty()) {
-      throw new IllegalStateException("Must contain an entityId expression");
-    }
+    // Read from an optional property that contains the shell string representing the EntityId to
+    // write back to Kiji with.
+    String entityIdShellString = properties.getProperty(ENTITY_ID_SHELL_STRING);
 
     final KijiTableInfo kijiTableInfo = new KijiTableInfo(properties);
     mHiveTableDescription = HiveTableDescription.newBuilder()
         .withColumnNames(columnNames)
         .withColumnTypes(TypeInfoUtils.getTypeInfosFromTypeString(columnTypes))
         .withColumnExpressions(columnExpressions)
-        .withEntityIdColumns(entityIdExpressions)
+        .withEntityIdShellStringColumn(entityIdShellString)
         .build();
     try {
       if(conf == null) {
@@ -95,7 +106,6 @@ public class KijiTableSerDe implements SerDe {
     } catch (Exception e) {
       throw new SerDeException("Unable to construct the data request.", e);
     }
-    LOG.info("FIXME done initializing");
   }
 
   /** {@inheritDoc} */
@@ -147,9 +157,6 @@ public class KijiTableSerDe implements SerDe {
    * @return A list of the comma-separated fields in the property value.
    */
   private static List<String> readPropertyList(Properties properties, String name) {
-    //FIXME Better validation for kiji.entity.id
-    Preconditions.checkState(properties.containsKey(name),
-        "Missing SERDEPROPERTIES configuration for: " + name);
     return Arrays.asList(properties.getProperty(name).split(","));
   }
 }

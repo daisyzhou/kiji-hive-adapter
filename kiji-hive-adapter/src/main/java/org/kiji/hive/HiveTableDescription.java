@@ -64,8 +64,8 @@ public final class HiveTableDescription {
   /** The column expressions describing how to map data from the Kiji table into the columns. */
   private final List<KijiRowExpression> mExpressions;
 
-  /** The columns that comprise the entityId. */
-  private final List<Integer> mEntityIdColumnIndexes;
+  /** The column that contains the shell string used for determining the EntityId for writes. */
+  private final Integer mEntityIdShellStringIndex;
 
   /** The data request we'll use to read from the kiji table. */
   private final KijiDataRequest mDataRequest;
@@ -75,7 +75,8 @@ public final class HiveTableDescription {
     private List<String> mColumnNames;
     private List<TypeInfo> mColumnTypes;
     private List<String> mColumnExpressions;
-    private List<String> mEntityIdColumns;
+
+    private String mEntityIdShellStringColumn;
 
     /** True if we already built an object. */
     private boolean mIsBuilt = false;
@@ -117,14 +118,15 @@ public final class HiveTableDescription {
     }
 
     /**
-     * Sets the Kiji EntityId columns
+     * Sets the Hive column to be used for determining the shell string used for finding EntityId
+     * to write with in Hive.
      *
-     * @param entityIdColumns The Kiji row expressions.
+     * @param entityIdShellStringColumn The Hive column representing the EntityId shell string.
      * @return This instance.
      */
-    public HiveTableDescriptionBuilder withEntityIdColumns(List<String> entityIdColumns) {
+    public HiveTableDescriptionBuilder withEntityIdShellStringColumn(String entityIdShellStringColumn) {
       checkNotBuilt();
-      mEntityIdColumns = entityIdColumns;
+      mEntityIdShellStringColumn = entityIdShellStringColumn;
       return this;
     }
 
@@ -183,15 +185,16 @@ public final class HiveTableDescription {
       mExpressions.add(new KijiRowExpression(expression, typeInfo));
     }
 
-    mEntityIdColumnIndexes = Lists.newArrayList();
-    for(String entityIdColumn : builder.mEntityIdColumns) {
-      Integer index = builder.mColumnNames.indexOf(entityIdColumn);
-      Preconditions.checkArgument(-1 != index,
-          "EntityIdColumn {} not found in column list.", entityIdColumn);
-
-      mEntityIdColumnIndexes.add(index);
+    String entityIdShellStringColumn = builder.mEntityIdShellStringColumn;
+    if (entityIdShellStringColumn != null) {
+      mEntityIdShellStringIndex = builder.mColumnNames.indexOf(entityIdShellStringColumn);
+      Preconditions.checkState(-1 != mEntityIdShellStringIndex,
+          "EntityIdColumn %s not found in column list.", entityIdShellStringColumn);
+      // FIXME validate that this is indeed an :entity_id expression.
+    } else {
+      mEntityIdShellStringIndex = null;
     }
-    //FIXME validate EntityId columns against the what was actually passed in to make sure that we've got a fully covering set.
+    //TODO Process EntityId component columns here.
 
     mDataRequest = DataRequestOptimizer.getDataRequest(mExpressions);
   }
@@ -261,12 +264,14 @@ public final class HiveTableDescription {
 
     List<Object> structColumnData = structObjectInspector.getStructFieldsDataAsList(columnData);
 
-    // FIXME do the actual right thing here.
-    Integer entityIdColumn = mEntityIdColumnIndexes.get(0);
-    Object entityIdObject = structObjectInspector.getStructFieldsDataAsList(columnData).get(entityIdColumn);
-    Text entityIdShellString = (Text) AvroTypeAdapter.get().toWritableType(structObjectInspector.getAllStructFieldRefs().get(entityIdColumn).getFieldObjectInspector(), entityIdObject);
+    Object entityIdObject = structColumnData.get(mEntityIdShellStringIndex);
+    ObjectInspector entityIdObjectInspector = structObjectInspector.getAllStructFieldRefs().
+        get(mEntityIdShellStringIndex).getFieldObjectInspector();
+    Text entityIdShellString = (Text) AvroTypeAdapter.get().toWritableType(entityIdObjectInspector, entityIdObject);
     LOG.info("EntityId: " + entityIdShellString.toString());
     EntityIdWritable eidw = new EntityIdWritable(entityIdShellString);
+
+    //TODO Process EntityId component columns here.
 
     LOG.info("Inspecting: " + structObjectInspector.toString());
     Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> writableData = Maps.newHashMap();

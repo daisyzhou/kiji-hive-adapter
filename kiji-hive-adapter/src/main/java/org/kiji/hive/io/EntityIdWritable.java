@@ -79,7 +79,7 @@ public class EntityIdWritable implements Writable {
     mShellString = entityId.toShellString();
   }
 
-  /** FIXME build from components */
+  /** FIXME build from components. */
   public EntityIdWritable(List<Object> components) {
     mHBaseRowKey = new byte[0];
     mComponents = components;

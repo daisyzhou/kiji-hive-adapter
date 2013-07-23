@@ -260,7 +260,7 @@ public final class AvroTypeAdapter {
         List hiveList = listObjectInspector.getList(hiveObject);
 
         Writable[] writableArray = new Writable[hiveList.size()];
-        for(int c=0; c<hiveList.size(); c++) {
+        for (int c=0; c<hiveList.size(); c++) {
           Object obj = hiveList.get(c);
           Writable writableObj = toWritableType(elementObjectInspector, obj);
           writableArray[c] = writableObj;

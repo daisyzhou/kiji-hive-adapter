@@ -43,13 +43,9 @@ public class KijiTableStorageHandler extends DefaultStorageHandler {
     return KijiTableInputFormat.class;
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  /** {@inheritDoc} */
   @Override
   public Class<? extends OutputFormat> getOutputFormatClass() {
-    LOG.info("FIXME Getting outputformat.class");
-    LOG.info("FIXME name: "+ KijiTableOutputFormat.class.getName());
     return KijiTableOutputFormat.class;
   }
 
@@ -62,17 +58,22 @@ public class KijiTableStorageHandler extends DefaultStorageHandler {
   /** {@inheritDoc} */
   @Override
   public void configureInputJobProperties(TableDesc tableDesc, Map<String, String> jobProperties) {
-    LOG.info("FIXME Configuring input job properties");
     configureKijiJobProperties(tableDesc, jobProperties);
   }
 
   /** {@inheritDoc} */
   @Override
   public void configureOutputJobProperties(TableDesc tableDesc, Map<String, String> jobProperties) {
-    LOG.info("FIXME Configuring output job properties");
     configureKijiJobProperties(tableDesc, jobProperties);
   }
 
+  /**
+   * Helper method to share logic between {@link #configureInputJobProperties} and
+   * {@link #configureOutputJobProperties}.
+   *
+   * @param tableDesc descriptor for the table being accessed
+   * @param jobProperties receives properties copied or transformed
+   */
   private void configureKijiJobProperties(TableDesc tableDesc, Map<String, String> jobProperties) {
     KijiURI kijiURI = KijiTableInfo.getURIFromProperties(tableDesc.getProperties());
     jobProperties.put(KijiTableOutputFormat.CONF_KIJI_TABLE_URI, kijiURI.toString());

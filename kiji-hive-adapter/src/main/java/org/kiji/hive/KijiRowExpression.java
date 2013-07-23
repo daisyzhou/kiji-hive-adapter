@@ -117,7 +117,16 @@ public class KijiRowExpression {
     return mExpression.getDataRequest();
   }
 
-  public NavigableMap<Long, KijiCellWritable> convertToTimeSeries(ObjectInspector objectInspector, Object hiveObject) {
+  /**
+   * Converts a Hive object(with associated ObjectInspector) to a time series data that is more
+   * representative of a Kiji internal representation.
+   *
+   * @param objectInspector that defines the Hive format of the object.
+   * @param hiveObject containing the data that is to be converted into a time series format.
+   * @return timeseries data suitable for writing into Kiji.
+   */
+  public NavigableMap<Long, KijiCellWritable> convertToTimeSeries(ObjectInspector objectInspector,
+                                                                  Object hiveObject) {
     return mExpression.convertToTimeSeries(objectInspector, hiveObject);
   }
 

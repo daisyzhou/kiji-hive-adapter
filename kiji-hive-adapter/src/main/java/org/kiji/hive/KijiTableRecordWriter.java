@@ -70,11 +70,14 @@ public class KijiTableRecordWriter
   }
 
   @Override
-  public void write(Writable w) throws IOException {
-    Preconditions.checkArgument(w instanceof KijiRowDataWritable,
+  public void write(Writable writable) throws IOException {
+    Preconditions.checkArgument(writable instanceof KijiRowDataWritable,
         "KijiTableRecordWriter can only operate on KijiRowDataWritable objects.");
-    KijiRowDataWritable kijiRowDataWritable = (KijiRowDataWritable) w;
+
+    KijiRowDataWritable kijiRowDataWritable = (KijiRowDataWritable) writable;
     KijiTableLayout kijiTableLayout = mKijiTable.getLayout();
+
+    //FIXME be able to decide which EntityId to use.
     EntityId eid = ToolUtils.createEntityIdFromUserInputs(kijiRowDataWritable.getEntityId().toShellString(), kijiTableLayout);
     Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> writableData = kijiRowDataWritable.getData();
     for(Map.Entry<KijiColumnName, NavigableMap<Long, KijiCellWritable>> entry : writableData.entrySet()) {
@@ -83,12 +86,12 @@ public class KijiTableRecordWriter
       String qualifier = kijiColumnName.getQualifier();
       //FIXME we throw away the redundant timestamp, but maybe we want to do validation.
       for(KijiCellWritable kijiCellWritable : entry.getValue().values()) {
-        LOG.info("Writing {}:{} at {} with {}", family, qualifier, kijiCellWritable.getTimestamp(), kijiCellWritable.getData().toString());
-        mKijiTableWriter.put(eid, family, qualifier, kijiCellWritable.getTimestamp(), kijiCellWritable.getData().toString());
+        LOG.info("FIXME Writing {}:{} at {} with {}", family, qualifier, kijiCellWritable.getTimestamp(),
+            kijiCellWritable.getData().toString());
+        mKijiTableWriter.put(eid, family, qualifier, kijiCellWritable.getTimestamp(),
+            kijiCellWritable.getData().toString());
       }
-
     }
-    LOG.info("Dropping {} on the floor.", w.toString());
   }
 
   @Override
