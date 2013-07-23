@@ -97,6 +97,13 @@ public class KijiTableSerDe implements SerDe {
         .withColumnExpressions(columnExpressions)
         .withEntityIdShellStringColumn(entityIdShellString)
         .build();
+
+    if (!mHiveTableDescription.isWritable()) {
+      LOG.warn("Neither {} nor {} unspecified, so this Hive view of a KijiTable is read only.",
+          ENTITY_ID_SHELL_STRING,
+          LIST_ENTITY_ID_COMPONENTS);
+    }
+
     try {
       if(conf == null) {
         conf = new HBaseConfiguration();

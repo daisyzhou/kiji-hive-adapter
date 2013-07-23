@@ -269,7 +269,7 @@ public final class HiveTableDescription {
         get(mEntityIdShellStringIndex).getFieldObjectInspector();
     Text entityIdShellString = (Text) AvroTypeAdapter.get().toWritableType(entityIdObjectInspector, entityIdObject);
     LOG.info("EntityId: " + entityIdShellString.toString());
-    EntityIdWritable eidw = new EntityIdWritable(entityIdShellString);
+    EntityIdWritable entityIdWritable = new EntityIdWritable(entityIdShellString);
 
     //TODO Process EntityId component columns here.
 
@@ -295,8 +295,20 @@ public final class HiveTableDescription {
       }
     }
 
-    KijiRowDataWritable kijiRowData = new KijiRowDataWritable(eidw, writableData);
+    KijiRowDataWritable kijiRowData = new KijiRowDataWritable(entityIdWritable, writableData);
     //FIXME do awesome things.
     return kijiRowData;
+  }
+
+  /**
+   * Determines whether or not this HiveTableDescription is writable or not.
+   *
+   * @return whether this Hive table description is a writable one or not.
+   */
+  public boolean isWritable() {
+    if (mEntityIdShellStringIndex != null) {
+      return true;
+    }
+    return false;
   }
 }
