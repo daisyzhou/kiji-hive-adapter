@@ -124,7 +124,8 @@ public final class HiveTableDescription {
      * @param entityIdShellStringColumn The Hive column representing the EntityId shell string.
      * @return This instance.
      */
-    public HiveTableDescriptionBuilder withEntityIdShellStringColumn(String entityIdShellStringColumn) {
+    public HiveTableDescriptionBuilder withEntityIdShellStringColumn(
+        String entityIdShellStringColumn) {
       checkNotBuilt();
       mEntityIdShellStringColumn = entityIdShellStringColumn;
       return this;
@@ -252,7 +253,10 @@ public final class HiveTableDescription {
    * @return An object representing the row.
    * @throws IOException If there is an IO error.
    */
-  public KijiRowDataWritable createWritableObject(Object columnData, ObjectInspector objectInspector) throws IOException {
+  public KijiRowDataWritable createWritableObject(Object columnData,
+                                                  ObjectInspector objectInspector)
+      throws IOException {
+
     Preconditions.checkArgument(objectInspector instanceof StandardStructObjectInspector);
     StandardStructObjectInspector structObjectInspector = (StandardStructObjectInspector) objectInspector;
 
@@ -268,21 +272,27 @@ public final class HiveTableDescription {
     ObjectInspector entityIdObjectInspector = structObjectInspector.getAllStructFieldRefs().
         get(mEntityIdShellStringIndex).getFieldObjectInspector();
     Text entityIdShellString = (Text) AvroTypeAdapter.get().toWritableType(entityIdObjectInspector, entityIdObject);
-    LOG.info("EntityId: " + entityIdShellString.toString());
     EntityIdWritable entityIdWritable = new EntityIdWritable(entityIdShellString);
+    LOG.info("FIXME EntityId: " + entityIdShellString.toString());
 
     //TODO Process EntityId component columns here.
 
-    LOG.info("Inspecting: " + structObjectInspector.toString());
+    LOG.info("FIXME Inspecting: " + structObjectInspector.toString());
     Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> writableData = Maps.newHashMap();
     for(int c=0; c<mExpressions.size(); c++) {
       if(mExpressions.get(c).isCellData()) {
         KijiColumnName kijiColumnName = mExpressions.get(c).getColumnName();
         ObjectInspector colObjectInspector = structObjectInspector.getAllStructFieldRefs().get(c).getFieldObjectInspector();
-        NavigableMap<Long, KijiCellWritable> wd = mExpressions.get(c).convertToTimeSeries(colObjectInspector, structColumnData.get(c));
+        NavigableMap<Long, KijiCellWritable> writableTimeseriesData =
+            mExpressions.get(c).convertToTimeSeries(colObjectInspector, structColumnData.get(c));
 
-        //FIXME we probably need to merge this in at some point rather than flat out replacing.
-        writableData.put(kijiColumnName, wd);
+        if (writableData.containsKey(kijiColumnName) ) {
+          // If data has already been found for this column, merge it in.
+          NavigableMap<Long, KijiCellWritable> existingTimeseriesData = writableData.get(kijiColumnName);
+          existingTimeseriesData.putAll(writableTimeseriesData);
+        } else {
+          writableData.put(kijiColumnName, writableTimeseriesData);
+        }
 
         /* FIXME DELETE
         LOG.info("Processing: " + kijiColumnName);
