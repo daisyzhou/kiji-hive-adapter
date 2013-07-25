@@ -68,8 +68,13 @@ public class KijiRowDataWritable implements Writable {
   public KijiRowDataWritable() {
   }
 
+  /**
+   * Construct a KijiRowDataWritable from
+   * @param entityIdWritable
+   * @param writableData
+   */
   public KijiRowDataWritable(EntityIdWritable entityIdWritable,
-                             Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> writableData) {
+      Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> writableData) {
     mEntityId = entityIdWritable;
     mWritableData = writableData;
   }
@@ -105,7 +110,12 @@ public class KijiRowDataWritable implements Writable {
     }
   }
 
-  //FIXME We can do better than this naked call
+  /**
+   * Returns the map of column names to timeseries of KijiCell data.
+   * FIXME We can do better than this naked call.
+   *
+   * @return map of KijiColumnName to timeseries of
+   */
   public Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> getData() {
     return mWritableData;
   }

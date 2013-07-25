@@ -190,11 +190,14 @@ public class KijiRowExpression {
     KijiColumnName getColumnName();
 
     /**
-     * Converts hive object into timeseries data.
+     * Converts Hive object into timeseries data using the associated ObjectInspector.
      *
+     * @param objectInspector that defines the format of the object passed in from Hive.
+     * @param hiveObject that contains the data to be translated into a timeseries.
      * @return Timeseries data
      */
-    NavigableMap<Long, KijiCellWritable> convertToTimeSeries(ObjectInspector objectInspector, Object hiveObject);
+    NavigableMap<Long, KijiCellWritable> convertToTimeSeries(
+        ObjectInspector objectInspector, Object hiveObject);
 
     /**
      * Gets the data request required to evaluate this expression.
@@ -344,7 +347,8 @@ public class KijiRowExpression {
 
     /** {@inheritDoc} */
     @Override
-    public NavigableMap<Long, KijiCellWritable> convertToTimeSeries(ObjectInspector objectInspector, Object hiveObject) {
+    public NavigableMap<Long, KijiCellWritable> convertToTimeSeries(
+        ObjectInspector objectInspector, Object hiveObject) {
       throw new UnsupportedOperationException();
     }
   }
@@ -436,7 +440,8 @@ public class KijiRowExpression {
 
     /** {@inheritDoc} */
     @Override
-    public NavigableMap<Long, KijiCellWritable> convertToTimeSeries(ObjectInspector objectInspector, Object hiveObject) {
+    public NavigableMap<Long, KijiCellWritable> convertToTimeSeries(
+        ObjectInspector objectInspector, Object hiveObject) {
       throw new UnsupportedOperationException();
     }
 
@@ -536,7 +541,8 @@ public class KijiRowExpression {
 
     /** {@inheritDoc} */
     @Override
-    public NavigableMap<Long, KijiCellWritable> convertToTimeSeries(ObjectInspector objectInspector, Object hiveObject) {
+    public NavigableMap<Long, KijiCellWritable> convertToTimeSeries(
+        ObjectInspector objectInspector, Object hiveObject) {
       throw new UnsupportedOperationException();
     }
   }
@@ -607,7 +613,8 @@ public class KijiRowExpression {
     }
 
     @Override
-    public NavigableMap<Long, KijiCellWritable> convertToTimeSeries(ObjectInspector objectInspector, Object hiveObject) {
+    public NavigableMap<Long, KijiCellWritable> convertToTimeSeries(
+        ObjectInspector objectInspector, Object hiveObject) {
       throw new UnsupportedOperationException();
     }
   }
@@ -703,12 +710,14 @@ public class KijiRowExpression {
 
     /** {@inheritDoc} */
     @Override
-    public NavigableMap<Long, KijiCellWritable> convertToTimeSeries(ObjectInspector objectInspector, Object hiveObject) {
+    public NavigableMap<Long, KijiCellWritable> convertToTimeSeries(
+        ObjectInspector objectInspector, Object hiveObject) {
       NavigableMap<Long, KijiCellWritable> timeseries = Maps.newTreeMap();
 
       StructObjectInspector structObjectInspector = (StructObjectInspector) objectInspector;
       List<Object> fieldsData = structObjectInspector.getStructFieldsDataAsList(hiveObject);
-      Preconditions.checkArgument(fieldsData.size()==2, "ColumnFlatValueExpression with more than two fields");
+      Preconditions.checkArgument(fieldsData.size() == 2,
+          "ColumnFlatValueExpression with more than two fields");
       Timestamp timestampObject = (Timestamp) fieldsData.get(0);
       Long timestamp = timestampObject.getTime();
 
@@ -784,15 +793,18 @@ public class KijiRowExpression {
 
     /** {@inheritDoc} */
     @Override
-    public NavigableMap<Long, KijiCellWritable> convertToTimeSeries(ObjectInspector objectInspector, Object hiveObject) {
+    public NavigableMap<Long, KijiCellWritable> convertToTimeSeries(ObjectInspector objectInspector,
+                                                                    Object hiveObject) {
       NavigableMap<Long, KijiCellWritable> timeseries = Maps.newTreeMap();
 
       ListObjectInspector listObjectInspector = (ListObjectInspector) objectInspector;
       List<Object> listObjects = (List<Object>) listObjectInspector.getList(hiveObject);
-      StructObjectInspector structObjectInspector = (StructObjectInspector) listObjectInspector.getListElementObjectInspector();
-      for(Object obj : listObjects) {
+      StructObjectInspector structObjectInspector =
+          (StructObjectInspector) listObjectInspector.getListElementObjectInspector();
+      for (Object obj : listObjects) {
         List<Object> fieldsData = structObjectInspector.getStructFieldsDataAsList(obj);
-        Preconditions.checkArgument(fieldsData.size() == 2, "ColumnFlatValueExpression with more than two fields");
+        Preconditions.checkArgument(fieldsData.size() == 2,
+            "ColumnFlatValueExpression with more than two fields");
         Timestamp timestampObject = (Timestamp) fieldsData.get(0);
         Long timestamp = timestampObject.getTime();
 

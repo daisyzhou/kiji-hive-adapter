@@ -250,6 +250,7 @@ public final class HiveTableDescription {
    * should match the data types specified in the hive table schema.</p>
    *
    * @param columnData The HBase data from the row.
+   * @param objectInspector The object inspector defining the format of the columnData.
    * @return An object representing the row.
    * @throws IOException If there is an IO error.
    */
@@ -258,10 +259,13 @@ public final class HiveTableDescription {
       throws IOException {
 
     Preconditions.checkArgument(objectInspector instanceof StandardStructObjectInspector);
-    StandardStructObjectInspector structObjectInspector = (StandardStructObjectInspector) objectInspector;
+    StandardStructObjectInspector structObjectInspector =
+        (StandardStructObjectInspector) objectInspector;
 
-    // Hive passes us a struct that should have all columns that are specified in the Hive table description.
-    Preconditions.checkState(mExpressions.size() == structObjectInspector.getAllStructFieldRefs().size(),
+    // Hive passes us a struct that should have all columns that are specified in the Hive table
+    // description.
+    Preconditions.checkState(
+        mExpressions.size() == structObjectInspector.getAllStructFieldRefs().size(),
         "Table has {} columns, but query has {} columns",
         mExpressions.size(),
         structObjectInspector.getAllStructFieldRefs().size());
@@ -271,37 +275,31 @@ public final class HiveTableDescription {
     Object entityIdObject = structColumnData.get(mEntityIdShellStringIndex);
     ObjectInspector entityIdObjectInspector = structObjectInspector.getAllStructFieldRefs().
         get(mEntityIdShellStringIndex).getFieldObjectInspector();
-    Text entityIdShellString = (Text) AvroTypeAdapter.get().toWritableType(entityIdObjectInspector, entityIdObject);
-    EntityIdWritable entityIdWritable = new EntityIdWritable(entityIdShellString);
+    Text entityIdShellString =
+        (Text) AvroTypeAdapter.get().toWritableType(entityIdObjectInspector, entityIdObject);
+    EntityIdWritable entityIdWritable = new EntityIdWritable(entityIdShellString.toString());
     LOG.info("FIXME EntityId: " + entityIdShellString.toString());
 
     //TODO Process EntityId component columns here.
 
     LOG.info("FIXME Inspecting: " + structObjectInspector.toString());
     Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> writableData = Maps.newHashMap();
-    for(int c=0; c<mExpressions.size(); c++) {
-      if(mExpressions.get(c).isCellData()) {
+    for (int c=0; c < mExpressions.size(); c++) {
+      if (mExpressions.get(c).isCellData()) {
         KijiColumnName kijiColumnName = mExpressions.get(c).getColumnName();
-        ObjectInspector colObjectInspector = structObjectInspector.getAllStructFieldRefs().get(c).getFieldObjectInspector();
+        ObjectInspector colObjectInspector =
+            structObjectInspector.getAllStructFieldRefs().get(c).getFieldObjectInspector();
         NavigableMap<Long, KijiCellWritable> writableTimeseriesData =
             mExpressions.get(c).convertToTimeSeries(colObjectInspector, structColumnData.get(c));
 
-        if (writableData.containsKey(kijiColumnName) ) {
+        if (writableData.containsKey(kijiColumnName)) {
           // If data has already been found for this column, merge it in.
-          NavigableMap<Long, KijiCellWritable> existingTimeseriesData = writableData.get(kijiColumnName);
+          NavigableMap<Long, KijiCellWritable> existingTimeseriesData =
+              writableData.get(kijiColumnName);
           existingTimeseriesData.putAll(writableTimeseriesData);
         } else {
           writableData.put(kijiColumnName, writableTimeseriesData);
         }
-
-        /* FIXME DELETE
-        LOG.info("Processing: " + kijiColumnName);
-        ObjectInspector fieldObjectInspector = structObjectInspector.getAllStructFieldRefs().get(c).getFieldObjectInspector();
-        LOG.info("OI: " + fieldObjectInspector);
-        Writable writableObj = AvroTypeAdapter.get().toWritableType(fieldObjectInspector, structColumnData.get(c));
-         */
-        //FIXME build the relevant writable data.
-
       }
     }
 

@@ -81,10 +81,13 @@ public class KijiTableSerDe implements SerDe {
         "SERDEPROPERTIES missing configuration for property: {}", LIST_COLUMN_EXPRESSIONS);
     final List<String> columnExpressions = readPropertyList(properties, LIST_COLUMN_EXPRESSIONS);
 
-    // Check that at least one of LIST_ENTITY_ID_COMPONENTS or ENTITY_ID_SHELL_STRING is unspecified.
-    Preconditions.checkArgument(!properties.containsKey(ENTITY_ID_SHELL_STRING) ||
-        !properties.containsKey(LIST_ENTITY_ID_COMPONENTS),
-        "SERDEPROPERTIES cannot specify both: " + ENTITY_ID_SHELL_STRING + " and" + LIST_ENTITY_ID_COMPONENTS);
+    // Check that at least one of LIST_ENTITY_ID_COMPONENTS or ENTITY_ID_SHELL_STRING is
+    // unspecified.
+    Preconditions.checkArgument(!properties.containsKey(ENTITY_ID_SHELL_STRING)
+        || !properties.containsKey(LIST_ENTITY_ID_COMPONENTS),
+        "SERDEPROPERTIES cannot specify both: %s and %x.",
+        ENTITY_ID_SHELL_STRING,
+        LIST_ENTITY_ID_COMPONENTS);
 
     // Read from an optional property that contains the shell string representing the EntityId to
     // write back to Kiji with.
@@ -105,7 +108,7 @@ public class KijiTableSerDe implements SerDe {
     }
 
     try {
-      if(conf == null) {
+      if (conf == null) {
         conf = new HBaseConfiguration();
       }
       conf.set(KijiTableInputFormat.CONF_KIJI_DATA_REQUEST,

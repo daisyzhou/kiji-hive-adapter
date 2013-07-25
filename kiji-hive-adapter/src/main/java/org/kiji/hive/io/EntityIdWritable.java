@@ -28,7 +28,6 @@ import java.util.List;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableUtils;
 import org.slf4j.Logger;
@@ -79,7 +78,10 @@ public class EntityIdWritable implements Writable {
     mShellString = entityId.toShellString();
   }
 
-  /** FIXME build from components. */
+  /**
+   * Constructs an EntityIdWritable from row key components.
+   * @param components list of row key components.
+   */
   public EntityIdWritable(List<Object> components) {
     mHBaseRowKey = new byte[0];
     mComponents = components;
@@ -87,9 +89,10 @@ public class EntityIdWritable implements Writable {
   }
 
   /**
-   * FIXME build from components
+   * Constructs an EntityIdWritable from a shell string.
+   * @param shellString associated with this EntityId.
    */
-  public EntityIdWritable(Text shellString) {
+  public EntityIdWritable(String shellString) {
     mHBaseRowKey = new byte[0];
     mComponents = Lists.newArrayList();
     mShellString = shellString.toString();

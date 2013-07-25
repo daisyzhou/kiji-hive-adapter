@@ -44,7 +44,8 @@ import org.kiji.schema.KijiURI;
  * <p>
  *   This output format exists in addition to the
  *   {@link org.kiji.mapreduce.framework.KijiTableOutputFormat} because we need one that is
- *   an instance of mapred.InputFormat (not mapreduce.KijiTableOutputFormat) for integration with hive.
+ *   an instance of mapred.InputFormat (not mapreduce.KijiTableOutputFormat) for integration with
+ *   Hive.
  * </p>
  *
  * <p>
@@ -80,7 +81,9 @@ public class KijiTableOutputFormat
   }
 
   @Override
-  public RecordWriter<ImmutableBytesWritable, KijiRowDataWritable> getRecordWriter(FileSystem fileSystem, JobConf entries, String s, Progressable progressable) throws IOException {
+  public RecordWriter<ImmutableBytesWritable, KijiRowDataWritable> getRecordWriter(
+      FileSystem fileSystem, JobConf entries, String s, Progressable progressable)
+      throws IOException {
     throw new UnsupportedOperationException("Hive should not be calling getRecordWriter()");
   }
 
@@ -96,8 +99,8 @@ public class KijiTableOutputFormat
                                                            Class<? extends Writable> valueClass,
                                                            boolean isCompressed,
                                                            Properties tableProperties,
-                                                           Progressable progress) throws IOException {
-    LOG.info("Getting record writer.");
+                                                           Progressable progress)
+      throws IOException {
     return new KijiTableRecordWriter(jc);
   }
 }

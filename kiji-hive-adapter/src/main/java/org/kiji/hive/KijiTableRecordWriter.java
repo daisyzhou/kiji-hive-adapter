@@ -78,15 +78,20 @@ public class KijiTableRecordWriter
     KijiTableLayout kijiTableLayout = mKijiTable.getLayout();
 
     //FIXME be able to decide which EntityId to use.
-    EntityId eid = ToolUtils.createEntityIdFromUserInputs(kijiRowDataWritable.getEntityId().toShellString(), kijiTableLayout);
-    Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> writableData = kijiRowDataWritable.getData();
-    for(Map.Entry<KijiColumnName, NavigableMap<Long, KijiCellWritable>> entry : writableData.entrySet()) {
+    EntityId eid = ToolUtils.createEntityIdFromUserInputs(
+        kijiRowDataWritable.getEntityId().toShellString(),
+        kijiTableLayout);
+    Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> writableData =
+        kijiRowDataWritable.getData();
+    for (Map.Entry<KijiColumnName, NavigableMap<Long, KijiCellWritable>> entry
+        : writableData.entrySet()) {
       KijiColumnName kijiColumnName = entry.getKey();
       String family = kijiColumnName.getFamily();
       String qualifier = kijiColumnName.getQualifier();
       //FIXME we throw away the redundant timestamp, but maybe we want to do validation.
-      for(KijiCellWritable kijiCellWritable : entry.getValue().values()) {
-        LOG.info("FIXME Writing {}:{} at {} with {}", family, qualifier, kijiCellWritable.getTimestamp(),
+      for (KijiCellWritable kijiCellWritable : entry.getValue().values()) {
+        LOG.info("FIXME Writing {}:{} at {} with {}", family, qualifier,
+            kijiCellWritable.getTimestamp(),
             kijiCellWritable.getData().toString());
         mKijiTableWriter.put(eid, family, qualifier, kijiCellWritable.getTimestamp(),
             kijiCellWritable.getData().toString());
