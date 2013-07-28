@@ -88,10 +88,7 @@ public class KijiTableOutputFormat
   }
 
   @Override
-  public void checkOutputSpecs(FileSystem fileSystem, JobConf entries) throws IOException {
-    LOG.info("FIXME checkingOutputSpecs does nothing!");
-    //throw new UnsupportedOperationException("checkOutputSpecs unsupported");
-  }
+  public void checkOutputSpecs(FileSystem fileSystem, JobConf entries) throws IOException {}
 
   @Override
   public FileSinkOperator.RecordWriter getHiveRecordWriter(JobConf jc,
