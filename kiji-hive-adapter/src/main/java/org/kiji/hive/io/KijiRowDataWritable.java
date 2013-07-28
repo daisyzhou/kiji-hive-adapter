@@ -69,9 +69,10 @@ public class KijiRowDataWritable implements Writable {
   }
 
   /**
-   * Construct a KijiRowDataWritable from
-   * @param entityIdWritable
-   * @param writableData
+   * Construct a KijiRowDataWritable from the Writable objects generated from Hive.
+   *
+   * @param entityIdWritable that maps to the row key.
+   * @param writableData of column to timeseries data.
    */
   public KijiRowDataWritable(EntityIdWritable entityIdWritable,
       Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> writableData) {

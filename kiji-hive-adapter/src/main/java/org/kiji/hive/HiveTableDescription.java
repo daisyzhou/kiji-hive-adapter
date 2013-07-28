@@ -286,19 +286,20 @@ public final class HiveTableDescription {
     Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> writableData = Maps.newHashMap();
     for (int c=0; c < mExpressions.size(); c++) {
       if (mExpressions.get(c).isCellData()) {
-        KijiColumnName kijiColumnName = mExpressions.get(c).getColumnName();
         ObjectInspector colObjectInspector =
             structObjectInspector.getAllStructFieldRefs().get(c).getFieldObjectInspector();
-        NavigableMap<Long, KijiCellWritable> writableTimeseriesData =
+        Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> writableTimeseriesData =
             mExpressions.get(c).convertToTimeSeries(colObjectInspector, structColumnData.get(c));
+        for (KijiColumnName kijiColumnName : writableTimeseriesData.keySet()) {
+          NavigableMap<Long, KijiCellWritable> columnTimeseries =
+              writableTimeseriesData.get(kijiColumnName);
 
-        if (writableData.containsKey(kijiColumnName)) {
-          // If data has already been found for this column, merge it in.
-          NavigableMap<Long, KijiCellWritable> existingTimeseriesData =
-              writableData.get(kijiColumnName);
-          existingTimeseriesData.putAll(writableTimeseriesData);
-        } else {
-          writableData.put(kijiColumnName, writableTimeseriesData);
+          if(writableData.containsKey(kijiColumnName)) {
+            // Merge these timeseries together.
+            writableData.get(kijiColumnName).putAll(columnTimeseries);
+          } else {
+            writableData.put(kijiColumnName, columnTimeseries);
+          }
         }
       }
     }
