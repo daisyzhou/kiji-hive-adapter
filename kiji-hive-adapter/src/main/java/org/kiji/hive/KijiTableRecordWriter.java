@@ -85,6 +85,7 @@ public class KijiTableRecordWriter
         kijiRowDataWritable.getData();
     for (Map.Entry<KijiColumnName, NavigableMap<Long, KijiCellWritable>> entry
         : writableData.entrySet()) {
+
       KijiColumnName kijiColumnName = entry.getKey();
       String family = kijiColumnName.getFamily();
       String qualifier = kijiColumnName.getQualifier();
@@ -93,6 +94,8 @@ public class KijiTableRecordWriter
         LOG.info("FIXME Writing {}:{} at {} with {}", family, qualifier,
             kijiCellWritable.getTimestamp(),
             kijiCellWritable.getData().toString());
+        
+        //FIXME support writing of non-string types
         mKijiTableWriter.put(eid, family, qualifier, kijiCellWritable.getTimestamp(),
             kijiCellWritable.getData().toString());
       }

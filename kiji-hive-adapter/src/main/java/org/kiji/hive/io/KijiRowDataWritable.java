@@ -22,6 +22,7 @@ package org.kiji.hive.io;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
@@ -112,13 +113,13 @@ public class KijiRowDataWritable implements Writable {
   }
 
   /**
-   * Returns the map of column names to timeseries of KijiCell data.
-   * FIXME We can do better than this naked call.
+   * Returns an unmodifiable map of column names to timeseries of KijiCell data.  Note that the
+   * individual timeseries are mutable collections.
    *
-   * @return map of KijiColumnName to timeseries of
+   * @return map of KijiColumnName to timeseries of data.
    */
   public Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> getData() {
-    return mWritableData;
+    return Collections.unmodifiableMap(mWritableData);
   }
 
   /**

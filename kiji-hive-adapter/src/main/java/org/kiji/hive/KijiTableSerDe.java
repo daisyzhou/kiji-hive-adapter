@@ -58,7 +58,7 @@ public class KijiTableSerDe implements SerDe {
 
   // Property specifying a list of Hive columns which represent the EntityId.
   // Cannot be specified at the same time as ENTITY_ID_SHELL_STRING.
-  // FIXME this feature isn't yet supported, but can come as a later patch.
+  // TODO: this feature isn't yet supported, but can come as a later patch.
   // Make a ticket and prioritize it accordingly.
   public static final String LIST_ENTITY_ID_COMPONENTS = "kiji.entity.id.columns";
 
@@ -113,7 +113,7 @@ public class KijiTableSerDe implements SerDe {
       }
       conf.set(KijiTableInputFormat.CONF_KIJI_DATA_REQUEST,
           KijiDataRequestSerializer.serialize(mHiveTableDescription.getDataRequest()));
-    } catch (Exception e) {
+    } catch (IOException e) {
       throw new SerDeException("Unable to construct the data request.", e);
     }
   }
@@ -127,7 +127,6 @@ public class KijiTableSerDe implements SerDe {
   /** {@inheritDoc} */
   @Override
   public Writable serialize(Object obj, ObjectInspector objInspector) throws SerDeException {
-    LOG.info("FIXME serialize called for: {}", obj.toString());
     try {
       return mHiveTableDescription.createWritableObject(obj, objInspector);
     } catch (IOException e) {
