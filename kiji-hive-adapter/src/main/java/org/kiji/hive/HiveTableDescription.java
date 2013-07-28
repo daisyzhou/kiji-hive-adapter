@@ -294,7 +294,7 @@ public final class HiveTableDescription {
           NavigableMap<Long, KijiCellWritable> columnTimeseries =
               writableTimeseriesData.get(kijiColumnName);
 
-          if(writableData.containsKey(kijiColumnName)) {
+          if (writableData.containsKey(kijiColumnName)) {
             // Merge these timeseries together.
             writableData.get(kijiColumnName).putAll(columnTimeseries);
           } else {

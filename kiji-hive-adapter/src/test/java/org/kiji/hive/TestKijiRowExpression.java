@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.hbase.HConstants;
@@ -68,7 +67,12 @@ public class TestKijiRowExpression extends KijiClientTest {
   private KijiTable mTable;
   private KijiTableReader mReader;
 
-  private ObjectInspector timeseriesObjectInspector;
+  //
+  private ObjectInspector mColumnFlatValueObjectInspector;
+  private ObjectInspector mColumnAllValuesObjectInspector;
+  private ObjectInspector mFamilyFlatValueObjectInspector;
+  private ObjectInspector mFamilyAllValuesObjectInspector;
+
 
   @Before
   public final void setupKijiInstance() throws IOException {
@@ -101,9 +105,31 @@ public class TestKijiRowExpression extends KijiClientTest {
     List<ObjectInspector> objectInspectors = Lists.newArrayList();
     objectInspectors.add(PrimitiveObjectInspectorFactory.javaTimestampObjectInspector);
     objectInspectors.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
-    timeseriesObjectInspector = ObjectInspectorFactory.getStandardStructObjectInspector(
-        columnNames,
-        objectInspectors);
+
+    // Setup relevant ObjectInspectors
+
+    // STRUCT<TIMESTAMP, cell>
+    mColumnFlatValueObjectInspector =
+        ObjectInspectorFactory.getStandardStructObjectInspector(
+            columnNames,
+            objectInspectors);
+
+    // ARRAY<STRUCT<TIMESTAMP, cell>>
+    mColumnAllValuesObjectInspector =
+        ObjectInspectorFactory.getStandardListObjectInspector(
+            mColumnFlatValueObjectInspector);
+
+    // MAP<STRING, STRUCT<TIMESTAMP, cell>>
+    mFamilyFlatValueObjectInspector =
+        ObjectInspectorFactory.getStandardMapObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            mColumnFlatValueObjectInspector);
+
+    // MAP<STRING, ARRAY<STRUCT<TIMESTAMP, cell>>>
+    mFamilyAllValuesObjectInspector =
+        ObjectInspectorFactory.getStandardMapObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            mColumnAllValuesObjectInspector);
   }
 
   @After
@@ -160,31 +186,34 @@ public class TestKijiRowExpression extends KijiClientTest {
         new KijiRowExpression("map", TypeInfos.FAMILY_MAP_ALL_VALUES);
     List<Object> hiveCellA1 = createHiveTimestampedCell(3L, "c");
     List<Object> hiveCellA2 = createHiveTimestampedCell(5L, "e");
-    List<Object> hiveCellB = createHiveTimestampedCell(4L, "d");
+    List<Object> hiveCellsA = Lists.newArrayList();
+    hiveCellsA.add(hiveCellA1);
+    hiveCellsA.add(hiveCellA2);
+    List<Object> hiveCellB1 = createHiveTimestampedCell(4L, "d");
+    List<Object> hiveCellB2 = createHiveTimestampedCell(6L, "f");
+    List<Object> hiveCellsB = Lists.newArrayList();
+    hiveCellsB.add(hiveCellB1);
+    hiveCellsB.add(hiveCellB2);
 
     Map<String, Object> hiveData = Maps.newHashMap();
-    hiveData.put("qualA", hiveCellA1);
-    hiveData.put("qualA", hiveCellA2);
-    hiveData.put("qualB", hiveCellB);
+    hiveData.put("qualA", hiveCellsA);
+    hiveData.put("qualB", hiveCellsB);
 
-    // Create an ObjectInspector for a list of timeseries.
-    ObjectInspector mapObjectInspector =
-        ObjectInspectorFactory.getStandardMapObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-            timeseriesObjectInspector);
     Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> expressionData =
-        kijiRowExpression.convertToTimeSeries(mapObjectInspector, hiveData);
+        kijiRowExpression.convertToTimeSeries(mFamilyAllValuesObjectInspector, hiveData);
+
     KijiColumnName kijiColumnNameA = new KijiColumnName("map", "qualA");
     assertTrue(expressionData.containsKey(kijiColumnNameA));
     NavigableMap<Long, KijiCellWritable> timeseriesA = expressionData.get(kijiColumnNameA);
-
     validateCell(hiveCellA1, timeseriesA);
     validateCell(hiveCellA2, timeseriesA);
 
     KijiColumnName kijiColumnNameB = new KijiColumnName("map", "qualB");
     assertTrue(expressionData.containsKey(kijiColumnNameB));
     NavigableMap<Long, KijiCellWritable> timeseriesB = expressionData.get(kijiColumnNameB);
-    validateCell(hiveCellB, timeseriesB);
+    validateCell(hiveCellB1, timeseriesB);
+    validateCell(hiveCellB2, timeseriesB);
+
   }
 
   @Test
@@ -225,13 +254,8 @@ public class TestKijiRowExpression extends KijiClientTest {
     hiveData.put("qualA", hiveCellA);
     hiveData.put("qualB", hiveCellB);
 
-    // Create an ObjectInspector for a list of timeseries.
-    ObjectInspector mapObjectInspector =
-        ObjectInspectorFactory.getStandardMapObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-            timeseriesObjectInspector);
     Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> expressionData =
-        kijiRowExpression.convertToTimeSeries(mapObjectInspector, hiveData);
+        kijiRowExpression.convertToTimeSeries(mFamilyFlatValueObjectInspector, hiveData);
 
     KijiColumnName kijiColumnNameA = new KijiColumnName("map", "qualA");
     assertTrue(expressionData.containsKey(kijiColumnNameA));
@@ -277,12 +301,9 @@ public class TestKijiRowExpression extends KijiClientTest {
     hiveData.add(hiveCell1);
     hiveData.add(hiveCell2);
 
-    // Create an ObjectInspector for a list of timeseries.
-    ObjectInspector listObjectInspector =
-        ObjectInspectorFactory.getStandardListObjectInspector(timeseriesObjectInspector);
-
     Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> expressionData =
-        kijiRowExpression.convertToTimeSeries(listObjectInspector, hiveData);
+        kijiRowExpression.convertToTimeSeries(mColumnAllValuesObjectInspector, hiveData);
+
     KijiColumnName kijiColumnName = new KijiColumnName("family", "qual0");
     assertTrue(expressionData.containsKey(kijiColumnName));
     NavigableMap<Long, KijiCellWritable> timeseries = expressionData.get(kijiColumnName);
@@ -321,7 +342,7 @@ public class TestKijiRowExpression extends KijiClientTest {
     List<Object> hiveCell = createHiveTimestampedCell(3L, "c");
 
     Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> expressionData =
-        kijiRowExpression.convertToTimeSeries(timeseriesObjectInspector, hiveCell);
+        kijiRowExpression.convertToTimeSeries(mColumnFlatValueObjectInspector, hiveCell);
     KijiColumnName kijiColumnName = new KijiColumnName("family", "qual0");
     assertTrue(expressionData.containsKey(kijiColumnName));
     NavigableMap<Long, KijiCellWritable> timeseries = expressionData.get(kijiColumnName);
@@ -453,10 +474,12 @@ public class TestKijiRowExpression extends KijiClientTest {
    * @param expectedCell List containing a timeseries and data object.
    * @param actual timeseries of KijiCellWritables.
    */
-  private static void validateCell(List<Object> expectedCell, NavigableMap<Long, KijiCellWritable> actual) {
-    Preconditions.checkArgument(expectedCell.size()==2);
+  private static void validateCell(List<Object> expectedCell,
+                                   NavigableMap<Long, KijiCellWritable> actual) {
+    assertEquals(2, expectedCell.size());
     long timestamp = ((Timestamp) expectedCell.get(0)).getTime();
     Object data = expectedCell.get(1);
+
     assertTrue(actual.containsKey(timestamp));
     KijiCellWritable kijiCellWritable = actual.get(timestamp);
     assertEquals((long) timestamp, kijiCellWritable.getTimestamp());

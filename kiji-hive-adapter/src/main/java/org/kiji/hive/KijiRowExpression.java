@@ -118,8 +118,8 @@ public class KijiRowExpression {
    * @param hiveObject containing the data that is to be converted into a time series format.
    * @return timeseries data suitable for writing into Kiji.
    */
-  public Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> convertToTimeSeries(ObjectInspector objectInspector,
-                                                                                       Object hiveObject) {
+  public Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> convertToTimeSeries(
+      ObjectInspector objectInspector, Object hiveObject) {
     return mExpression.convertToTimeSeries(objectInspector, hiveObject);
   }
 
@@ -618,8 +618,45 @@ public class KijiRowExpression {
     @Override
     public Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> convertToTimeSeries(
         ObjectInspector objectInspector, Object hiveObject) {
-      //FIXME implement
-      throw new UnsupportedOperationException();
+      Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> expressionData = Maps.newHashMap();
+
+      // MAP<STRING, ARRAY<STRUCT<TIMESTAMP, cell>>>
+      MapObjectInspector mapObjectInspector = (MapObjectInspector) objectInspector;
+      Map mapData = mapObjectInspector.getMap(hiveObject);
+      for (Object key : mapData.keySet()) {
+        NavigableMap<Long, KijiCellWritable> timeseries = Maps.newTreeMap();
+
+        // Assumes that this key is a string.
+        Preconditions.checkState(key instanceof String, "FIXME Key must be a string");
+        String qualifier = (String) key;
+
+        // ARRAY<STRUCT<TIMESTAMP, cell>>
+        ListObjectInspector listObjectInspector =
+             (ListObjectInspector) mapObjectInspector.getMapValueObjectInspector();
+        List<Object> listObjects =
+            (List<Object>) mapObjectInspector.getMapValueElement(hiveObject, key);
+
+        StructObjectInspector structObjectInspector =
+            (StructObjectInspector) listObjectInspector.getListElementObjectInspector();
+        for (Object obj : listObjects) {
+          System.out.println(obj);
+
+          List<Object> fieldsData = structObjectInspector.getStructFieldsDataAsList(obj);
+          Preconditions.checkArgument(fieldsData.size() == 2,
+              "ColumnValueExpression with more than two fields");
+          Timestamp timestampObject = (Timestamp) fieldsData.get(0);
+          Long timestamp = timestampObject.getTime();
+
+          //FIXME this assumes primitive types.
+          KijiCellWritable kijiCellWritable = new KijiCellWritable(timestamp, fieldsData.get(1));
+          timeseries.put(timestamp, kijiCellWritable);
+        }
+        //FIXME
+        KijiColumnName kijiColumnName = new KijiColumnName(getFamily(), qualifier);
+        expressionData.put(kijiColumnName, timeseries);
+      }
+
+      return expressionData;
     }
   }
 
