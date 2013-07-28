@@ -743,7 +743,8 @@ public class KijiRowExpression {
       NavigableMap<Long, KijiCellWritable> timeseries = Maps.newTreeMap();
 
       StructObjectInspector structObjectInspector = (StructObjectInspector) objectInspector;
-      List<Object> timestampedCellFields = structObjectInspector.getStructFieldsDataAsList(hiveObject);
+      List<Object> timestampedCellFields =
+          structObjectInspector.getStructFieldsDataAsList(hiveObject);
       //FIXME this assumes primitive types.
       KijiCellWritable kijiCellWritable = new KijiCellWritable(timestampedCellFields);
       timeseries.put(kijiCellWritable.getTimestamp(), kijiCellWritable);

@@ -95,7 +95,7 @@ public class KijiTableRecordWriter
       String qualifier = kijiColumnName.getQualifier();
 
       NavigableMap<Long, KijiCellWritable> timeseries = writableData.get(kijiColumnName);
-      // Ignoring the redundant timestamp in this Map in favor of the one contained in the KijiCellWritable.
+      // Ignoring the redundant timestamp in this Map in favor of the one contained in the cell.
       for (KijiCellWritable kijiCellWritable : timeseries.values()) {
         Long timestamp = kijiCellWritable.getTimestamp();
         Object data = kijiCellWritable.getData();
