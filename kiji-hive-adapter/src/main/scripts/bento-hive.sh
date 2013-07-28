@@ -19,7 +19,7 @@
 
 # Configuration parameters for this script
 CLOUDERA_URL="http://archive.cloudera.com/cdh4/cdh/4/"
-HIVE_VERSION="0.10.0-cdh4.2.1"
+HIVE_VERSION="0.10.0-cdh4.3.0"
 HIVE_DIRECTORY="hive-${HIVE_VERSION}"
 HIVE_ARCHIVE="hive-${HIVE_VERSION}.tar.gz"
 HIVE_URL="${CLOUDERA_URL}${HIVE_ARCHIVE}"
