@@ -22,9 +22,11 @@ package org.kiji.hive.io;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.avro.Schema;
@@ -68,12 +70,29 @@ public class KijiCellWritable implements Writable {
 
   /**
    * Constructor for a KijiCellWritable from the Hive timestamp and data pair.
+   *
+   * FIXME remove this
    * @param timestamp associated with the cell.
    * @param data contained within the cell.
    */
   public KijiCellWritable(Long timestamp, Object data) {
     mTimestamp = timestamp;
     mData = data;
+  }
+
+  /**
+   * Constructor for a KijiCellWritable from a List representing a Hive timestamp and data pair.
+   *
+   * @param timestampedCellFields List containing a timestamp and cell data pair.
+   */
+  public KijiCellWritable(List<Object> timestampedCellFields) {
+    Preconditions.checkArgument(timestampedCellFields.size() == 2,
+        "FamilyAllValuesExpression with more than two fields");
+    Timestamp timestampObject = (Timestamp) timestampedCellFields.get(0);
+    Long timestamp = timestampObject.getTime();
+
+    mTimestamp = timestamp;
+    mData = timestampedCellFields.get(1);
   }
 
   /**

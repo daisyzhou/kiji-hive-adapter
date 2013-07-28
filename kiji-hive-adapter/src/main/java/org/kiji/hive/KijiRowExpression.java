@@ -532,15 +532,11 @@ public class KijiRowExpression {
         String qualifier = (String) key;
         StructObjectInspector structObjectInspector =
             (StructObjectInspector) mapObjectInspector.getMapValueObjectInspector();
-        List<Object> fieldsData = structObjectInspector.getStructFieldsDataAsList(
+        List<Object> timestampedCellFields = structObjectInspector.getStructFieldsDataAsList(
             mapObjectInspector.getMapValueElement(hiveObject, key));
-        Preconditions.checkArgument(fieldsData.size() == 2,
-            "FamilyFlatValueExpression with more than two fields");
-        Timestamp timestampObject = (Timestamp) fieldsData.get(0);
-        Long timestamp = timestampObject.getTime();
-        KijiCellWritable kijiCellWritable = new KijiCellWritable(timestamp, fieldsData.get(1));
+        KijiCellWritable kijiCellWritable = new KijiCellWritable(timestampedCellFields);
         //FIXME this assumes primitive types.
-        timeseries.put(timestamp, kijiCellWritable);
+        timeseries.put(kijiCellWritable.getTimestamp(), kijiCellWritable);
 
         KijiColumnName kijiColumnName = new KijiColumnName(getFamily(), qualifier);
         expressionData.put(kijiColumnName, timeseries);
@@ -620,38 +616,27 @@ public class KijiRowExpression {
         ObjectInspector objectInspector, Object hiveObject) {
       Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> expressionData = Maps.newHashMap();
 
-      // MAP<STRING, ARRAY<STRUCT<TIMESTAMP, cell>>>
-      MapObjectInspector mapObjectInspector = (MapObjectInspector) objectInspector;
-      Map mapData = mapObjectInspector.getMap(hiveObject);
-      for (Object key : mapData.keySet()) {
+      MapObjectInspector familyAllValuesOI = (MapObjectInspector) objectInspector;
+      Map familyAllValuesMap = familyAllValuesOI.getMap(hiveObject);
+
+      for (Object qualifierObject : familyAllValuesMap.keySet()) {
+        String qualifier = (String) qualifierObject;
+
+        ListObjectInspector allValuesOI =
+             (ListObjectInspector) familyAllValuesOI.getMapValueObjectInspector();
+        List<Object> allValuesObjects =
+            (List<Object>) familyAllValuesOI.getMapValueElement(hiveObject, qualifierObject);
+        StructObjectInspector timestampedCellOI =
+            (StructObjectInspector) allValuesOI.getListElementObjectInspector();
+
         NavigableMap<Long, KijiCellWritable> timeseries = Maps.newTreeMap();
-
-        // Assumes that this key is a string.
-        Preconditions.checkState(key instanceof String, "FIXME Key must be a string");
-        String qualifier = (String) key;
-
-        // ARRAY<STRUCT<TIMESTAMP, cell>>
-        ListObjectInspector listObjectInspector =
-             (ListObjectInspector) mapObjectInspector.getMapValueObjectInspector();
-        List<Object> listObjects =
-            (List<Object>) mapObjectInspector.getMapValueElement(hiveObject, key);
-
-        StructObjectInspector structObjectInspector =
-            (StructObjectInspector) listObjectInspector.getListElementObjectInspector();
-        for (Object obj : listObjects) {
-          System.out.println(obj);
-
-          List<Object> fieldsData = structObjectInspector.getStructFieldsDataAsList(obj);
-          Preconditions.checkArgument(fieldsData.size() == 2,
-              "ColumnValueExpression with more than two fields");
-          Timestamp timestampObject = (Timestamp) fieldsData.get(0);
-          Long timestamp = timestampObject.getTime();
-
+        for (Object obj : allValuesObjects) {
+          List<Object> timestampedCellFields = timestampedCellOI.getStructFieldsDataAsList(obj);
           //FIXME this assumes primitive types.
-          KijiCellWritable kijiCellWritable = new KijiCellWritable(timestamp, fieldsData.get(1));
-          timeseries.put(timestamp, kijiCellWritable);
+          KijiCellWritable kijiCellWritable =
+              new KijiCellWritable(timestampedCellFields);
+          timeseries.put(kijiCellWritable.getTimestamp(), kijiCellWritable);
         }
-        //FIXME
         KijiColumnName kijiColumnName = new KijiColumnName(getFamily(), qualifier);
         expressionData.put(kijiColumnName, timeseries);
       }
@@ -758,15 +743,10 @@ public class KijiRowExpression {
       NavigableMap<Long, KijiCellWritable> timeseries = Maps.newTreeMap();
 
       StructObjectInspector structObjectInspector = (StructObjectInspector) objectInspector;
-      List<Object> fieldsData = structObjectInspector.getStructFieldsDataAsList(hiveObject);
-      Preconditions.checkArgument(fieldsData.size() == 2,
-          "ColumnFlatValueExpression with more than two fields");
-      Timestamp timestampObject = (Timestamp) fieldsData.get(0);
-      Long timestamp = timestampObject.getTime();
-
+      List<Object> timestampedCellFields = structObjectInspector.getStructFieldsDataAsList(hiveObject);
       //FIXME this assumes primitive types.
-      KijiCellWritable kijiCellWritable = new KijiCellWritable(timestamp, fieldsData.get(1));
-      timeseries.put(timestamp, kijiCellWritable);
+      KijiCellWritable kijiCellWritable = new KijiCellWritable(timestampedCellFields);
+      timeseries.put(kijiCellWritable.getTimestamp(), kijiCellWritable);
 
       expressionData.put(getKijiColumnName(), timeseries);
 
@@ -849,15 +829,10 @@ public class KijiRowExpression {
       StructObjectInspector structObjectInspector =
           (StructObjectInspector) listObjectInspector.getListElementObjectInspector();
       for (Object obj : listObjects) {
-        List<Object> fieldsData = structObjectInspector.getStructFieldsDataAsList(obj);
-        Preconditions.checkArgument(fieldsData.size() == 2,
-            "ColumnValueExpression with more than two fields");
-        Timestamp timestampObject = (Timestamp) fieldsData.get(0);
-        Long timestamp = timestampObject.getTime();
-
+        List<Object> timestampedCellFields = structObjectInspector.getStructFieldsDataAsList(obj);
         //FIXME this assumes primitive types.
-        KijiCellWritable kijiCellWritable = new KijiCellWritable(timestamp, fieldsData.get(1));
-        timeseries.put(timestamp, kijiCellWritable);
+        KijiCellWritable kijiCellWritable = new KijiCellWritable(timestampedCellFields);
+        timeseries.put(kijiCellWritable.getTimestamp(), kijiCellWritable);
       }
 
       expressionData.put(getKijiColumnName(), timeseries);

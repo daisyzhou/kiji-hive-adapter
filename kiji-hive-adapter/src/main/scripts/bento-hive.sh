@@ -185,7 +185,7 @@ case $command in
         exec ${HIVE_BINARY} ${HIVE_OPTIONS} -i ${HIVERC}
         exit 0
         ;;
-    vshell)
+    shellv)
         HIVE_OPTIONS="$HIVE_OPTIONS -hiveconf hive.root.logger=INFO,console"
         generate_hiverc ${HIVERC}
         exec ${HIVE_BINARY} ${HIVE_OPTIONS} -i ${HIVERC}

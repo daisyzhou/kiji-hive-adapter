@@ -254,9 +254,8 @@ public final class HiveTableDescription {
    * @return An object representing the row.
    * @throws IOException If there is an IO error.
    */
-  public KijiRowDataWritable createWritableObject(Object columnData,
-                                                  ObjectInspector objectInspector)
-      throws IOException {
+  public KijiRowDataWritable createWritableObject(
+      Object columnData, ObjectInspector objectInspector) throws IOException {
 
     Preconditions.checkArgument(objectInspector instanceof StandardStructObjectInspector);
     StandardStructObjectInspector structObjectInspector =
@@ -271,18 +270,15 @@ public final class HiveTableDescription {
         structObjectInspector.getAllStructFieldRefs().size());
 
     List<Object> structColumnData = structObjectInspector.getStructFieldsDataAsList(columnData);
-
     Object entityIdObject = structColumnData.get(mEntityIdShellStringIndex);
     ObjectInspector entityIdObjectInspector = structObjectInspector.getAllStructFieldRefs().
         get(mEntityIdShellStringIndex).getFieldObjectInspector();
     Text entityIdShellString =
         (Text) AvroTypeAdapter.get().toWritableType(entityIdObjectInspector, entityIdObject);
     EntityIdWritable entityIdWritable = new EntityIdWritable(entityIdShellString.toString());
-    LOG.info("FIXME EntityId: " + entityIdShellString.toString());
 
     //TODO Process EntityId component columns here.
 
-    LOG.info("FIXME Inspecting: " + structObjectInspector.toString());
     Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> writableData = Maps.newHashMap();
     for (int c=0; c < mExpressions.size(); c++) {
       if (mExpressions.get(c).isCellData()) {
@@ -305,7 +301,6 @@ public final class HiveTableDescription {
     }
 
     KijiRowDataWritable kijiRowData = new KijiRowDataWritable(entityIdWritable, writableData);
-    //FIXME do awesome things.
     return kijiRowData;
   }
 

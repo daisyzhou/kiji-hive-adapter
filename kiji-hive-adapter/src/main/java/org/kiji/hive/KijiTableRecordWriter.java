@@ -91,10 +91,6 @@ public class KijiTableRecordWriter
       String qualifier = kijiColumnName.getQualifier();
       //FIXME we throw away the redundant timestamp, but maybe we want to do validation.
       for (KijiCellWritable kijiCellWritable : entry.getValue().values()) {
-        LOG.info("FIXME Writing {}:{} at {} with {}", family, qualifier,
-            kijiCellWritable.getTimestamp(),
-            kijiCellWritable.getData().toString());
-        
         //FIXME support writing of non-string types
         mKijiTableWriter.put(eid, family, qualifier, kijiCellWritable.getTimestamp(),
             kijiCellWritable.getData().toString());

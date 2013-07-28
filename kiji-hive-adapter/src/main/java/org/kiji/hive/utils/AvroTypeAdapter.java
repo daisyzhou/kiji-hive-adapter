@@ -244,8 +244,6 @@ public final class AvroTypeAdapter {
    * @return The converted hive datum, compatible with the standard object inspector.
    */
   public Writable toWritableType(ObjectInspector objectInspector, Object hiveObject) {
-
-    //FIXME this needs to be adapted to be the right thing.
     if (null == hiveObject) {
       return NullWritable.get();
     }
