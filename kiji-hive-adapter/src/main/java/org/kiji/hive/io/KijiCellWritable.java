@@ -69,18 +69,6 @@ public class KijiCellWritable implements Writable {
   }
 
   /**
-   * Constructor for a KijiCellWritable from the Hive timestamp and data pair.
-   *
-   * FIXME remove this
-   * @param timestamp associated with the cell.
-   * @param data contained within the cell.
-   */
-  public KijiCellWritable(Long timestamp, Object data) {
-    mTimestamp = timestamp;
-    mData = data;
-  }
-
-  /**
    * Constructor for a KijiCellWritable from a List representing a Hive timestamp and data pair.
    *
    * @param timestampedCellFields List containing a timestamp and cell data pair.

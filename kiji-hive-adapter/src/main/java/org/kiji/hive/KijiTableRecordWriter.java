@@ -62,11 +62,17 @@ public class KijiTableRecordWriter
   public KijiTableRecordWriter(Configuration conf)
       throws IOException {
     String kijiURIString = conf.get(KijiTableOutputFormat.CONF_KIJI_TABLE_URI);
-    LOG.info("FIXME configuring KijiTableRecordWriter with URI {}", kijiURIString);
     KijiURI kijiURI = KijiURI.newBuilder(kijiURIString).build();
     mKiji = Kiji.Factory.open(kijiURI);
     mKijiTable = mKiji.openTable(kijiURI.getTable());
     mKijiTableWriter = mKijiTable.openTableWriter();
+  }
+
+  @Override
+  public void close(boolean abort) throws IOException {
+    ResourceUtils.closeOrLog(mKijiTableWriter);
+    ResourceUtils.releaseOrLog(mKijiTable);
+    ResourceUtils.releaseOrLog(mKiji);
   }
 
   @Override
@@ -77,32 +83,25 @@ public class KijiTableRecordWriter
     KijiRowDataWritable kijiRowDataWritable = (KijiRowDataWritable) writable;
     KijiTableLayout kijiTableLayout = mKijiTable.getLayout();
 
-    //FIXME be able to decide which EntityId to use.
-    EntityId eid = ToolUtils.createEntityIdFromUserInputs(
+    //TODO Process EntityId components here as well.
+    EntityId entityId = ToolUtils.createEntityIdFromUserInputs(
         kijiRowDataWritable.getEntityId().toShellString(),
         kijiTableLayout);
+
     Map<KijiColumnName, NavigableMap<Long, KijiCellWritable>> writableData =
         kijiRowDataWritable.getData();
-    for (Map.Entry<KijiColumnName, NavigableMap<Long, KijiCellWritable>> entry
-        : writableData.entrySet()) {
-
-      KijiColumnName kijiColumnName = entry.getKey();
+    for (KijiColumnName kijiColumnName: writableData.keySet()) {
       String family = kijiColumnName.getFamily();
       String qualifier = kijiColumnName.getQualifier();
-      //FIXME we throw away the redundant timestamp, but maybe we want to do validation.
-      for (KijiCellWritable kijiCellWritable : entry.getValue().values()) {
+
+      NavigableMap<Long, KijiCellWritable> timeseries = writableData.get(kijiColumnName);
+      // Ignoring the redundant timestamp in this Map in favor of the one contained in the KijiCellWritable.
+      for (KijiCellWritable kijiCellWritable : timeseries.values()) {
+        Long timestamp = kijiCellWritable.getTimestamp();
+        Object data = kijiCellWritable.getData();
         //FIXME support writing of non-string types
-        mKijiTableWriter.put(eid, family, qualifier, kijiCellWritable.getTimestamp(),
-            kijiCellWritable.getData().toString());
+        mKijiTableWriter.put(entityId, family, qualifier, timestamp, data);
       }
     }
-  }
-
-  @Override
-  public void close(boolean abort) throws IOException {
-    LOG.info("Closing KijiTableRecordWriter");
-    ResourceUtils.closeOrLog(mKijiTableWriter);
-    ResourceUtils.releaseOrLog(mKijiTable);
-    ResourceUtils.releaseOrLog(mKiji);
   }
 }

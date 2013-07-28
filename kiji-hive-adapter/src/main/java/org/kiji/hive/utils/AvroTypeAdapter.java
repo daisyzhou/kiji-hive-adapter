@@ -342,7 +342,6 @@ public final class AvroTypeAdapter {
         Timestamp timestampObject = (Timestamp) hiveObject;
         return new LongWritable(timestampObject.getTime());
       case BINARY:
-        //FIXME make sure that this is the right thing to do.
         ByteArrayRef byteArrayRefObject = (ByteArrayRef) hiveObject;
         return new BytesWritable(byteArrayRefObject.getData());
       default:

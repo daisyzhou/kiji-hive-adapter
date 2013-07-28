@@ -191,7 +191,6 @@ public final class HiveTableDescription {
       mEntityIdShellStringIndex = builder.mColumnNames.indexOf(entityIdShellStringColumn);
       Preconditions.checkState(-1 != mEntityIdShellStringIndex,
           "EntityIdColumn %s not found in column list.", entityIdShellStringColumn);
-      // FIXME validate that this is indeed an :entity_id expression.
     } else {
       mEntityIdShellStringIndex = null;
     }

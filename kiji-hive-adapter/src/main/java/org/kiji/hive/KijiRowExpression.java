@@ -528,7 +528,7 @@ public class KijiRowExpression {
         NavigableMap<Long, KijiCellWritable> timeseries = Maps.newTreeMap();
 
         // Assumes that this key is a string.
-        Preconditions.checkState(key instanceof String, "FIXME Key must be a string");
+        Preconditions.checkState(key instanceof String, "Hive Map key must be a string");
         String qualifier = (String) key;
         StructObjectInspector structObjectInspector =
             (StructObjectInspector) mapObjectInspector.getMapValueObjectInspector();

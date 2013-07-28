@@ -127,6 +127,9 @@ public class KijiTableSerDe implements SerDe {
   /** {@inheritDoc} */
   @Override
   public Writable serialize(Object obj, ObjectInspector objInspector) throws SerDeException {
+    if (!mHiveTableDescription.isWritable()) {
+      throw new SerDeException("KijiTable has no EntityId mapping and is not writable.");
+    }
     try {
       return mHiveTableDescription.createWritableObject(obj, objInspector);
     } catch (IOException e) {
@@ -137,9 +140,6 @@ public class KijiTableSerDe implements SerDe {
   /** {@inheritDoc} */
   @Override
   public Object deserialize(Writable blob) throws SerDeException {
-    if (!mHiveTableDescription.isWritable()) {
-      throw new SerDeException("KijiTable has no EntityId mapping and is not writable.");
-    }
     final KijiRowDataWritable result = (KijiRowDataWritable) blob;
     try {
       return mHiveTableDescription.createDataObject(result);
