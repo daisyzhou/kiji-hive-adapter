@@ -79,16 +79,6 @@ public class EntityIdWritable implements Writable {
   }
 
   /**
-   * Constructs an EntityIdWritable from row key components.
-   * @param components list of row key components.
-   */
-  public EntityIdWritable(List<Object> components) {
-    mHBaseRowKey = new byte[0];
-    mComponents = components;
-    mShellString = "";
-  }
-
-  /**
    * Constructs an EntityIdWritable from a shell string.
    * @param shellString associated with this EntityId.
    */

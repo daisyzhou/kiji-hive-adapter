@@ -47,7 +47,7 @@ import org.kiji.schema.KijiColumnName;
 import org.kiji.schema.KijiDataRequest;
 
 /**
- * Manages the description of the hive table providing the "view" of a KijiTable.
+ * Manages the description of the Hive table providing the "view" of a KijiTable.
  */
 public final class HiveTableDescription {
   private static final Logger LOG = LoggerFactory.getLogger(HiveTableDescription.class);
@@ -141,7 +141,7 @@ public final class HiveTableDescription {
           "Unable to read the hive column names and types.");
       Preconditions.checkArgument(mColumnNames.size() == mColumnExpressions.size(),
           "Incorrect number of column expressions specified. "
-              + "There must be one expression per column in the hive table.");
+              + "There must be one expression per column in the Hive table.");
 
       checkNotBuilt();
       mIsBuilt = true;
@@ -218,12 +218,12 @@ public final class HiveTableDescription {
   }
 
   /**
-   * Creates the in-memory row object that contains the column data in the hive table.
+   * Creates the in-memory row object that contains the column data in the Hive table.
    *
    * <p>The returned object will be given to the object inspector for
    * extracting column data. Since our object inspector is the
    * standard java inspector, the structure of the object returned
-   * should match the data types specified in the hive table schema.</p>
+   * should match the data types specified in the Hive table schema.</p>
    *
    * @param kijiRowData The HBase data from the row.
    * @return An object representing the row.
@@ -241,12 +241,12 @@ public final class HiveTableDescription {
   }
 
   /**
-   * Creates the in-memory row object that contains the column data in the hive table.
+   * Creates the in-memory row object that contains the column data in the Hive table.
    *
    * <p>The returned object will be given to the object inspector for
    * extracting column data. Since our object inspector is the
    * standard java inspector, the structure of the object returned
-   * should match the data types specified in the hive table schema.</p>
+   * should match the data types specified in the Hive table schema.</p>
    *
    * @param columnData The HBase data from the row.
    * @param objectInspector The object inspector defining the format of the columnData.
