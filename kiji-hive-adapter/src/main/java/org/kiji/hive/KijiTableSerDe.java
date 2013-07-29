@@ -93,7 +93,6 @@ public class KijiTableSerDe implements SerDe {
     // write back to Kiji with.
     String entityIdShellString = properties.getProperty(ENTITY_ID_SHELL_STRING);
 
-    final KijiTableInfo kijiTableInfo = new KijiTableInfo(properties);
     mHiveTableDescription = HiveTableDescription.newBuilder()
         .withColumnNames(columnNames)
         .withColumnTypes(TypeInfoUtils.getTypeInfosFromTypeString(columnTypes))

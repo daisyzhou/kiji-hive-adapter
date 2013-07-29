@@ -534,10 +534,11 @@ public class KijiRowExpression {
             (StructObjectInspector) mapObjectInspector.getMapValueObjectInspector();
         List<Object> timestampedCellFields = structObjectInspector.getStructFieldsDataAsList(
             mapObjectInspector.getMapValueElement(hiveObject, key));
-        KijiCellWritable kijiCellWritable = new KijiCellWritable(timestampedCellFields);
         //FIXME this assumes primitive types.
-        timeseries.put(kijiCellWritable.getTimestamp(), kijiCellWritable);
-
+        if (!timestampedCellFields.isEmpty()) {
+          KijiCellWritable kijiCellWritable = new KijiCellWritable(timestampedCellFields);
+          timeseries.put(kijiCellWritable.getTimestamp(), kijiCellWritable);
+        }
         KijiColumnName kijiColumnName = new KijiColumnName(getFamily(), qualifier);
         expressionData.put(kijiColumnName, timeseries);
       }
@@ -633,9 +634,10 @@ public class KijiRowExpression {
         for (Object obj : allValuesObjects) {
           List<Object> timestampedCellFields = timestampedCellOI.getStructFieldsDataAsList(obj);
           //FIXME this assumes primitive types.
-          KijiCellWritable kijiCellWritable =
-              new KijiCellWritable(timestampedCellFields);
-          timeseries.put(kijiCellWritable.getTimestamp(), kijiCellWritable);
+          if (!timestampedCellFields.isEmpty()) {
+            KijiCellWritable kijiCellWritable = new KijiCellWritable(timestampedCellFields);
+            timeseries.put(kijiCellWritable.getTimestamp(), kijiCellWritable);
+          }
         }
         KijiColumnName kijiColumnName = new KijiColumnName(getFamily(), qualifier);
         expressionData.put(kijiColumnName, timeseries);
@@ -746,8 +748,10 @@ public class KijiRowExpression {
       List<Object> timestampedCellFields =
           structObjectInspector.getStructFieldsDataAsList(hiveObject);
       //FIXME this assumes primitive types.
-      KijiCellWritable kijiCellWritable = new KijiCellWritable(timestampedCellFields);
-      timeseries.put(kijiCellWritable.getTimestamp(), kijiCellWritable);
+      if (!timestampedCellFields.isEmpty()) {
+        KijiCellWritable kijiCellWritable = new KijiCellWritable(timestampedCellFields);
+        timeseries.put(kijiCellWritable.getTimestamp(), kijiCellWritable);
+      }
 
       expressionData.put(getKijiColumnName(), timeseries);
 
@@ -832,8 +836,10 @@ public class KijiRowExpression {
       for (Object obj : listObjects) {
         List<Object> timestampedCellFields = structObjectInspector.getStructFieldsDataAsList(obj);
         //FIXME this assumes primitive types.
-        KijiCellWritable kijiCellWritable = new KijiCellWritable(timestampedCellFields);
-        timeseries.put(kijiCellWritable.getTimestamp(), kijiCellWritable);
+        if (!timestampedCellFields.isEmpty()) {
+          KijiCellWritable kijiCellWritable = new KijiCellWritable(timestampedCellFields);
+          timeseries.put(kijiCellWritable.getTimestamp(), kijiCellWritable);
+        }
       }
 
       expressionData.put(getKijiColumnName(), timeseries);

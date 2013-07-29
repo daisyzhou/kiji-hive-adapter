@@ -75,7 +75,8 @@ public class KijiCellWritable implements Writable {
    */
   public KijiCellWritable(List<Object> timestampedCellFields) {
     Preconditions.checkArgument(timestampedCellFields.size() == 2,
-        "FamilyAllValuesExpression with more than two fields");
+        "KijiCellWritable must be created with exactly 2 fields.  Found %s",
+        timestampedCellFields.size());
     Timestamp timestampObject = (Timestamp) timestampedCellFields.get(0);
     Long timestamp = timestampObject.getTime();
 
