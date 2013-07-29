@@ -130,7 +130,6 @@ public final class AvroTypeAdapter {
       return toHiveType((PrimitiveTypeInfo) hiveType, avro);
     case LIST:
       HiveList<Object> hiveList = new HiveList<Object>();
-      @SuppressWarnings("unchecked")
       final List<Object> avroList = (List<Object>) avro;
       final TypeInfo listElementType = ((ListTypeInfo) hiveType).getListElementTypeInfo();
       for (Object avroElement : avroList) {
@@ -186,7 +185,6 @@ public final class AvroTypeAdapter {
    */
   public Object toHiveType(PrimitiveTypeInfo primitiveType, Object avro) {
     switch (primitiveType.getPrimitiveCategory()) {
-
     case VOID: // Like the avro null type, right?
       return null;
 
@@ -271,7 +269,6 @@ public final class AvroTypeAdapter {
         ObjectInspector valueObjectInspector = mapObjectInspector.getMapValueObjectInspector();
         MapWritable mapWritable = new MapWritable();
 
-        @SuppressWarnings("unchecked")
         Map hiveMap = mapObjectInspector.getMap(hiveObject);
         for (Object entryObj : hiveMap.entrySet()) {
           Map.Entry entry = (Map.Entry) entryObj;

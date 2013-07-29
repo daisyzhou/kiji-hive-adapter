@@ -37,6 +37,7 @@
       <Or>
         <Method name="toNonNullableAvroSchema" />
         <Method name="toHiveType" />
+        <Method name="toWritableType" />
       </Or>
       <Bug pattern="BC_UNCONFIRMED_CAST" />
   </Match>

@@ -85,7 +85,7 @@ public class EntityIdWritable implements Writable {
   public EntityIdWritable(String shellString) {
     mHBaseRowKey = new byte[0];
     mComponents = Lists.newArrayList();
-    mShellString = shellString.toString();
+    mShellString = shellString;
   }
 
   /** @return the HBase row key. */
