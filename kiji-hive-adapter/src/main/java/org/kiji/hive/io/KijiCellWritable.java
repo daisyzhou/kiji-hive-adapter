@@ -34,6 +34,8 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.util.Utf8;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.hadoop.hive.serde2.objectinspector.StructField;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.Writable;
@@ -42,6 +44,7 @@ import org.apache.hadoop.io.WritableUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.kiji.hive.utils.AvroTypeAdapter;
 import org.kiji.schema.KijiCell;
 
 /**
@@ -69,19 +72,29 @@ public class KijiCellWritable implements Writable {
   }
 
   /**
-   * Constructor for a KijiCellWritable from a List representing a Hive timestamp and data pair.
+   * Constructor for a KijiCellWritable from a Hive representation of a cell.  This is
+   * typically a Hive struct containing two fields, one for the timestamp and one for the object.
    *
-   * @param timestampedCellFields List containing a timestamp and cell data pair.
+   * @param timestampedCellObjectInspector StructObjectInspector for this Hive object
+   * @param hiveObj representing a struct containing a Hive timestamp and data pair.
    */
-  public KijiCellWritable(List<Object> timestampedCellFields) {
-    Preconditions.checkArgument(timestampedCellFields.size() == 2,
-        "KijiCellWritable must be created with exactly 2 fields.  Found %s",
-        timestampedCellFields.size());
-    Timestamp timestampObject = (Timestamp) timestampedCellFields.get(0);
-    Long timestamp = timestampObject.getTime();
+  public KijiCellWritable(StructObjectInspector timestampedCellObjectInspector, Object hiveObj) {
+    List<Object> timestampedCellFields =
+        timestampedCellObjectInspector.getStructFieldsDataAsList(hiveObj);
+    if (timestampedCellFields.isEmpty()) {
+      LOG.warn("Passed in Hive object is empty.  Returning an empty KijiCellWritable");
+      mData = null;
+    } else {
+      Preconditions.checkState(timestampedCellFields.size() == 2,
+          "KijiCellWritable must be created with exactly 2 fields.  Found %s",
+          timestampedCellFields.size());
+      Timestamp timestampObject = (Timestamp) timestampedCellFields.get(0);
+      mTimestamp = timestampObject.getTime();
+      mData = timestampedCellFields.get(1);
+    }
 
-    mTimestamp = timestamp;
-    mData = timestampedCellFields.get(1);
+    StructField dataStructField = timestampedCellObjectInspector.getAllStructFieldRefs().get(1);
+    mSchema = AvroTypeAdapter.get().toAvroSchema(dataStructField.getFieldObjectInspector());
   }
 
   /**
@@ -105,8 +118,16 @@ public class KijiCellWritable implements Writable {
     return mData;
   }
 
+  /**
+   * @return if this cell has data in it.
+   */
+  public boolean hasData() {
+    return null != mData;
+  }
+
   @Override
   public void write(DataOutput out) throws IOException {
+    Preconditions.checkNotNull(mSchema);
     WritableUtils.writeVLong(out, mTimestamp);
     WritableUtils.writeString(out, mSchema.toString());
     writeData(out, mData, mSchema);

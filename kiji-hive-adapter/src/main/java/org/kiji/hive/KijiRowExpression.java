@@ -532,11 +532,10 @@ public class KijiRowExpression {
         String qualifier = (String) key;
         StructObjectInspector structObjectInspector =
             (StructObjectInspector) mapObjectInspector.getMapValueObjectInspector();
-        List<Object> timestampedCellFields = structObjectInspector.getStructFieldsDataAsList(
-            mapObjectInspector.getMapValueElement(hiveObject, key));
-        //FIXME this assumes primitive types.
-        if (!timestampedCellFields.isEmpty()) {
-          KijiCellWritable kijiCellWritable = new KijiCellWritable(timestampedCellFields);
+
+        Object mapValueObject = mapObjectInspector.getMapValueElement(hiveObject, key);
+        KijiCellWritable kijiCellWritable = new KijiCellWritable(structObjectInspector, mapValueObject);
+        if (kijiCellWritable.hasData()) {
           timeseries.put(kijiCellWritable.getTimestamp(), kijiCellWritable);
         }
         KijiColumnName kijiColumnName = new KijiColumnName(getFamily(), qualifier);
@@ -632,10 +631,8 @@ public class KijiRowExpression {
 
         NavigableMap<Long, KijiCellWritable> timeseries = Maps.newTreeMap();
         for (Object obj : allValuesObjects) {
-          List<Object> timestampedCellFields = timestampedCellOI.getStructFieldsDataAsList(obj);
-          //FIXME this assumes primitive types.
-          if (!timestampedCellFields.isEmpty()) {
-            KijiCellWritable kijiCellWritable = new KijiCellWritable(timestampedCellFields);
+          KijiCellWritable kijiCellWritable = new KijiCellWritable(timestampedCellOI, obj);
+          if (kijiCellWritable.hasData()) {
             timeseries.put(kijiCellWritable.getTimestamp(), kijiCellWritable);
           }
         }
@@ -745,16 +742,12 @@ public class KijiRowExpression {
       NavigableMap<Long, KijiCellWritable> timeseries = Maps.newTreeMap();
 
       StructObjectInspector structObjectInspector = (StructObjectInspector) objectInspector;
-      List<Object> timestampedCellFields =
-          structObjectInspector.getStructFieldsDataAsList(hiveObject);
-      //FIXME this assumes primitive types.
-      if (!timestampedCellFields.isEmpty()) {
-        KijiCellWritable kijiCellWritable = new KijiCellWritable(timestampedCellFields);
+      KijiCellWritable kijiCellWritable = new KijiCellWritable(structObjectInspector, hiveObject);
+      if (kijiCellWritable.hasData()) {
         timeseries.put(kijiCellWritable.getTimestamp(), kijiCellWritable);
       }
 
       expressionData.put(getKijiColumnName(), timeseries);
-
       return expressionData;
     }
   }
@@ -834,10 +827,8 @@ public class KijiRowExpression {
       StructObjectInspector structObjectInspector =
           (StructObjectInspector) listObjectInspector.getListElementObjectInspector();
       for (Object obj : listObjects) {
-        List<Object> timestampedCellFields = structObjectInspector.getStructFieldsDataAsList(obj);
-        //FIXME this assumes primitive types.
-        if (!timestampedCellFields.isEmpty()) {
-          KijiCellWritable kijiCellWritable = new KijiCellWritable(timestampedCellFields);
+        KijiCellWritable kijiCellWritable = new KijiCellWritable(structObjectInspector, obj);
+        if (kijiCellWritable.hasData()) {
           timeseries.put(kijiCellWritable.getTimestamp(), kijiCellWritable);
         }
       }

@@ -46,6 +46,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.UnionObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.MapTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
@@ -341,6 +342,72 @@ public final class AvroTypeAdapter {
       case BINARY:
         ByteArrayRef byteArrayRefObject = (ByteArrayRef) hiveObject;
         return new BytesWritable(byteArrayRefObject.getData());
+      default:
+        throw new UnsupportedOperationException("Unknown type: " + primitiveObjectInspector);
+    }
+  }
+
+  public Schema toAvroSchema(ObjectInspector objectInspector) {
+    switch (objectInspector.getCategory()) {
+      case PRIMITIVE:
+        return toAvroSchema((PrimitiveObjectInspector) objectInspector);
+      case LIST:
+        ListObjectInspector listObjectInspector = (ListObjectInspector) objectInspector;
+        return Schema.createArray(toAvroSchema(listObjectInspector.getListElementObjectInspector()));
+      case MAP:
+        MapObjectInspector mapObjectInspector = (MapObjectInspector) objectInspector;
+        return Schema.createMap(toAvroSchema(mapObjectInspector.getMapValueObjectInspector()));
+      case STRUCT:
+        StructObjectInspector structObjectInspector = (StructObjectInspector) objectInspector;
+        List structFields = ((StructObjectInspector) objectInspector).getAllStructFieldRefs();
+        List<Schema.Field> fields = Lists.newArrayList();
+        for (Object structFieldObj : structFields) {
+          StructField structField = (StructField) structFieldObj;
+          String fieldName = structField.getFieldName();
+          String fieldComment = structField.getFieldComment();
+          Schema.Field field = new Schema.Field(fieldName,
+              toAvroSchema(structField.getFieldObjectInspector()),
+              fieldComment, null);
+          fields.add(field);
+        }
+        return Schema.createRecord(fields);
+      case UNION:
+        UnionObjectInspector unionObjectInspector = (UnionObjectInspector) objectInspector;
+        List<ObjectInspector> unionObjectInspectors = unionObjectInspector.getObjectInspectors();
+        List<Schema> unionTypes = Lists.newArrayList();
+        for (ObjectInspector unionSubObjectInspector : unionObjectInspectors) {
+          unionTypes.add(toAvroSchema(unionSubObjectInspector));
+        }
+        return Schema.createUnion(unionTypes);
+      default:
+        throw new UnsupportedOperationException("Unknown type: " + objectInspector);
+    }
+  }
+
+  public Schema toAvroSchema(PrimitiveObjectInspector primitiveObjectInspector) {
+    switch (primitiveObjectInspector.getPrimitiveCategory()) {
+      case VOID: // Like the hiveObject null type, right?
+        return Schema.create(Schema.Type.NULL);
+      case BYTE:
+        return Schema.createFixed("BYTE", "", "", 1);
+      case SHORT:
+        return Schema.createFixed("SHORT", "", "", 2);
+      case BOOLEAN:
+        return Schema.create(Schema.Type.BOOLEAN);
+      case INT:
+        return Schema.create(Schema.Type.INT);
+      case LONG:
+        return Schema.create(Schema.Type.LONG);
+      case FLOAT:
+        return Schema.create(Schema.Type.FLOAT);
+      case DOUBLE:
+        return Schema.create(Schema.Type.DOUBLE);
+      case STRING:
+        return Schema.create(Schema.Type.STRING);
+      case TIMESTAMP:
+        return Schema.create(Schema.Type.LONG);
+      case BINARY:
+        return Schema.create(Schema.Type.BYTES);
       default:
         throw new UnsupportedOperationException("Unknown type: " + primitiveObjectInspector);
     }
