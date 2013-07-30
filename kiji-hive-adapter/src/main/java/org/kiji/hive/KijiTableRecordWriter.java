@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 
 import com.google.common.base.Preconditions;
+import org.apache.avro.Schema;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.ql.exec.FileSinkOperator;
 import org.apache.hadoop.io.Writable;
@@ -98,9 +99,31 @@ public class KijiTableRecordWriter
       // Ignoring the redundant timestamp in this Map in favor of the one contained in the cell.
       for (KijiCellWritable kijiCellWritable : timeseries.values()) {
         Long timestamp = kijiCellWritable.getTimestamp();
+        Schema schema = kijiCellWritable.getSchema();
+        Preconditions.checkNotNull(schema);
         Object data = kijiCellWritable.getData();
-        //FIXME support writing of non-string types
-        mKijiTableWriter.put(entityId, family, qualifier, timestamp, data);
+        switch (schema.getType()) {
+          case NULL:
+            // Don't write null values.
+            break;
+          case BOOLEAN:
+          case INT:
+          case LONG:
+          case FLOAT:
+          case DOUBLE:
+          case STRING:
+          case BYTES:
+          case FIXED:
+            // Write the primitive type to Kiji.
+            mKijiTableWriter.put(entityId, family, qualifier, timestamp, data);
+            break;
+          case RECORD:
+          case ARRAY:
+          case MAP:
+          case UNION:
+            // TODO: Support the writing of some of these complex types.
+            throw new UnsupportedOperationException("Unsupported type: " + schema.getType());
+        }
       }
     }
   }
