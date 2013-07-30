@@ -185,12 +185,6 @@ case $command in
         exec ${HIVE_BINARY} ${HIVE_OPTIONS} -i ${HIVERC}
         exit 0
         ;;
-    shellv)
-        HIVE_OPTIONS="$HIVE_OPTIONS -hiveconf hive.root.logger=INFO,console"
-        generate_hiverc ${HIVERC}
-        exec ${HIVE_BINARY} ${HIVE_OPTIONS} -i ${HIVERC}
-        exit 0
-        ;;
     generate)
         generate_hiverc ${HIVERC}
         IMPORT_TABLE_URI=$2

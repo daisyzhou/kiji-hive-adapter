@@ -67,12 +67,11 @@ public class TestKijiRowExpression extends KijiClientTest {
   private KijiTable mTable;
   private KijiTableReader mReader;
 
-  //
+  // ObjectInspectors to be created once and used in the tests.qgqq
   private ObjectInspector mColumnFlatValueObjectInspector;
   private ObjectInspector mColumnAllValuesObjectInspector;
   private ObjectInspector mFamilyFlatValueObjectInspector;
   private ObjectInspector mFamilyAllValuesObjectInspector;
-
 
   @Before
   public final void setupKijiInstance() throws IOException {

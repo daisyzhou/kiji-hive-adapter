@@ -127,7 +127,6 @@ public class KijiCellWritable implements Writable {
 
   @Override
   public void write(DataOutput out) throws IOException {
-    Preconditions.checkNotNull(mSchema);
     WritableUtils.writeVLong(out, mTimestamp);
     WritableUtils.writeString(out, mSchema.toString());
     writeData(out, mData, mSchema);
