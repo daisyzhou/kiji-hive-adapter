@@ -41,7 +41,6 @@ import org.slf4j.LoggerFactory;
 import org.kiji.hive.io.EntityIdWritable;
 import org.kiji.hive.io.KijiCellWritable;
 import org.kiji.hive.io.KijiRowDataWritable;
-import org.kiji.hive.utils.AvroTypeAdapter;
 import org.kiji.hive.utils.DataRequestOptimizer;
 import org.kiji.schema.KijiColumnName;
 import org.kiji.schema.KijiDataRequest;
@@ -269,11 +268,8 @@ public final class HiveTableDescription {
         structObjectInspector.getAllStructFieldRefs().size());
 
     List<Object> structColumnData = structObjectInspector.getStructFieldsDataAsList(columnData);
-    Object entityIdObject = structColumnData.get(mEntityIdShellStringIndex);
-    ObjectInspector entityIdObjectInspector = structObjectInspector.getAllStructFieldRefs().
-        get(mEntityIdShellStringIndex).getFieldObjectInspector();
-    Text entityIdShellString =
-        (Text) AvroTypeAdapter.get().toWritableType(entityIdObjectInspector, entityIdObject);
+    Object entityIdShellStringObject = structColumnData.get(mEntityIdShellStringIndex);
+    Text entityIdShellString = new Text((String) entityIdShellStringObject);
     EntityIdWritable entityIdWritable = new EntityIdWritable(entityIdShellString.toString());
 
     //TODO Process EntityId component columns here.

@@ -534,7 +534,8 @@ public class KijiRowExpression {
             (StructObjectInspector) mapObjectInspector.getMapValueObjectInspector();
 
         Object mapValueObject = mapObjectInspector.getMapValueElement(hiveObject, key);
-        KijiCellWritable kijiCellWritable = new KijiCellWritable(structObjectInspector, mapValueObject);
+        KijiCellWritable kijiCellWritable =
+            new KijiCellWritable(structObjectInspector, mapValueObject);
         if (kijiCellWritable.hasData()) {
           timeseries.put(kijiCellWritable.getTimestamp(), kijiCellWritable);
         }

@@ -121,6 +121,7 @@ public class KijiTableRecordWriter
           case ARRAY:
           case MAP:
           case UNION:
+          default:
             // TODO: Support the writing of some of these complex types.
             throw new UnsupportedOperationException("Unsupported type: " + schema.getType());
         }

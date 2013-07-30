@@ -35,9 +35,8 @@
     <!-- The casts in this class are already being checked by inspecing the typeinfo. -->
     <Class name="org.kiji.hive.utils.AvroTypeAdapter" />
       <Or>
-        <Method name="toNonNullableAvroSchema" />
+        <Method name="toAvroSchema" />
         <Method name="toHiveType" />
-        <Method name="toWritableType" />
       </Or>
       <Bug pattern="BC_UNCONFIRMED_CAST" />
   </Match>
