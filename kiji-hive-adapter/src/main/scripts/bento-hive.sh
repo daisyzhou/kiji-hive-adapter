@@ -23,7 +23,7 @@ HIVE_VERSION="0.10.0-cdh4.3.0"
 HIVE_DIRECTORY="hive-${HIVE_VERSION}"
 HIVE_ARCHIVE="hive-${HIVE_VERSION}.tar.gz"
 HIVE_URL="${CLOUDERA_URL}${HIVE_ARCHIVE}"
-HBASE_JAR="hbase-0.94.2-cdh4.2.1-security.jar"
+HBASE_JAR="hbase-0.94.6-cdh4.3.0-security.jar"
 KIJI_HIVE_ADAPTER_VERSION="${project.version}"
 
 # Resolve a symlink to its absolute target, like how 'readlink -f' works on Linux.
